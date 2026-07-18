@@ -4,6 +4,8 @@ subtitle: Off-grid inverter, battery bank, grid-tie and house
 precision: 1
 cell_warning_delta: 0.030
 show_zero_flows: false
+show_overview: false
+details_open: false
 
 # The three JK-BMS pack power sensors are summed for the battery flow.
 # If their sign is backwards in the animation, see README.md.

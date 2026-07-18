@@ -13,6 +13,8 @@ The card includes:
 - animated, direction-aware power-flow lines; and
 - built-in equipment illustrations, responsive mobile layout, and Home Assistant more-info dialogs.
 
+The default view follows the compact power-flow approach used by inverter displays: only live sources, destinations, power values, and animated paths are visible. Voltage, current, temperature, daily energy, and individual pack information are kept behind the **System details** control. Set `show_overview: true` if you also want the four summary tiles above the diagram, or `details_open: true` to start with all equipment sections visible.
+
 ## Install with HACS
 
 1. Open **HACS → Dashboard** in Home Assistant.
