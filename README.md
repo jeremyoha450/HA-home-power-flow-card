@@ -5,7 +5,7 @@ A dependency-free Home Assistant Lovelace card for a mixed off-grid and grid-tie
 The card includes:
 
 - two expandable off-grid solar arrays;
-- three expandable battery packs, including 16 cell voltages per pack;
+- four expandable battery packs, including 16 cell voltages per pack;
 - an expandable off-grid inverter;
 - a grid-tie inverter with two expandable solar arrays;
 - an expandable grid power box with import/export readings;
@@ -59,14 +59,15 @@ The card uses these signs to animate flow direction:
 
 For systems with only one bidirectional meter, `grid_tie.grid_power` remains supported as a fallback: positive is import and negative is export.
 
-The built-in schematic follows the supplied physical layout: grid and grid-tie generation meet at the power box, the power box connects to the off-grid inverter, and the off-grid inverter connects to the house, two solar inputs, and three battery packs.
+The compact schematic combines both existing Sunsynk views: grid and grid-tie generation meet at the power box, the power box connects to the off-grid inverter, and the off-grid inverter connects to the house, shed load, two solar inputs, and four individually visible battery packs. Tap any main component or battery pack to open its detailed readings.
 
 ## Current entity mapping
 
-`example-card.yaml` is populated with the supplied MPP Solar, JK-BMS, power-box, house, and grid-tie entities. The `sensor.inverter_pv1_*` and `sensor.inverter_pv2_*` entities are assigned to the grid-tie arrays; the `sensor.mppsolar_inverter_pv1_*` and `sensor.mppsolar_inverter_pv2_*` entities are assigned to the off-grid arrays. Two details still need confirmation:
+`example-card.yaml` is populated with the supplied MPP Solar, JK-BMS, power-box, house, and grid-tie entities. The `sensor.inverter_pv1_*` and `sensor.inverter_pv2_*` entities are assigned to the grid-tie arrays; the `sensor.mppsolar_inverter_pv1_*` and `sensor.mppsolar_inverter_pv2_*` entities are assigned to the off-grid arrays. Three details still need confirmation:
 
 - `sensor.mppsolar_inverter_pv1_charging_powe` was supplied without the final `r`. Keep it if that is the real Home Assistant entity ID; otherwise change it to `sensor.mppsolar_inverter_pv1_charging_power`.
-- The individual 16 cell-voltage entity IDs for each battery pack were not supplied. Average, minimum, and maximum cell voltage are already displayed. Add each pack's `cells:` list when those 48 IDs are known.
+- Battery Pack 4 uses the assumed `sensor.jkbms_bat_4_jkbms_*` naming pattern. Change those entries if its actual entity prefix differs.
+- The individual 16 cell-voltage entity IDs for each battery pack were not supplied. Average, minimum, and maximum cell voltage are already displayed. Add each pack's `cells:` list when those 64 IDs are known.
 
 The example assumes `sensor.grid_power_watts` is signed live power: positive for import and negative for export. If `sensor.powerbox_grid_power` is the signed sensor instead, change both `power_box.power` and `grid_tie.grid_power` to that entity.
 

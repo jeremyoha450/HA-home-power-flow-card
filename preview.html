@@ -20,12 +20,12 @@
       put(id, (start + ((i * 7) % 11) / 1000).toFixed(3));
       return id;
     });
-    const batteries = [1,2,3].map((n) => {
+    const batteries = [1,2,3,4].map((n) => {
       const prefix = `sensor.b${n}`;
-      put(`${prefix}_soc`, [82,79,84][n-1]); put(`${prefix}_voltage`, [53.2,53.1,53.3][n-1]);
-      put(`${prefix}_current`, [12.4,11.8,12.9][n-1]); put(`${prefix}_power`, [660,627,688][n-1]);
-      put(`${prefix}_temp1`, [27.2,28.1,27.7][n-1]); put(`${prefix}_temp2`, [26.8,27.5,27.2][n-1]);
-      put(`${prefix}_delta`, [0.014,0.019,0.016][n-1]); put(`${prefix}_cycles`, 347+n*4);
+      put(`${prefix}_soc`, [82,79,84,81][n-1]); put(`${prefix}_voltage`, [53.2,53.1,53.3,53.2][n-1]);
+      put(`${prefix}_current`, [12.4,11.8,12.9,12.1][n-1]); put(`${prefix}_power`, [660,627,688,644][n-1]);
+      put(`${prefix}_temp1`, [27.2,28.1,27.7,27.5][n-1]); put(`${prefix}_temp2`, [26.8,27.5,27.2,27.0][n-1]);
+      put(`${prefix}_delta`, [0.014,0.019,0.016,0.012][n-1]); put(`${prefix}_cycles`, 347+n*4);
       return {name:`Battery Pack ${n}`,soc:`${prefix}_soc`,voltage:`${prefix}_voltage`,current:`${prefix}_current`,power:`${prefix}_power`,temperature_1:`${prefix}_temp1`,temperature_2:`${prefix}_temp2`,cell_delta:`${prefix}_delta`,cycles:`${prefix}_cycles`,cells:cells(n,3.326+n*.002)};
     });
     const values = {
@@ -33,13 +33,13 @@
       "sensor.gt_pv1_p":1210,"sensor.gt_pv1_v":312.2,"sensor.gt_pv1_a":3.9,"sensor.gt_pv2_p":980,"sensor.gt_pv2_v":307.7,"sensor.gt_pv2_a":3.2,
       "sensor.og_out_p":2840,"sensor.og_out_v":239.7,"sensor.og_out_a":11.8,"sensor.og_hz":50.0,"sensor.og_load":42,"sensor.og_temp":38.2,"sensor.og_bus":54.1,"sensor.og_status":"Running",
       "sensor.gt_out_p":2130,"sensor.gt_out_v":240.1,"sensor.gt_out_a":8.9,"sensor.gt_hz":50.0,"sensor.gt_load":31,"sensor.gt_temp":41.4,"sensor.gt_bus":370.3,"sensor.gt_status":"Producing",
-      "sensor.house":4210,"sensor.grid_import":0,"sensor.grid_export":760,"sensor.offgrid_from_box":710,"sensor.bank":1975,"sensor.grid_v":240.2,"sensor.grid_a":3.2,"sensor.grid_hz":50,"sensor.grid_in":4.8,"sensor.grid_out":9.2
+      "sensor.house":4210,"sensor.shed":1440,"sensor.grid_import":0,"sensor.grid_export":760,"sensor.offgrid_from_box":710,"sensor.bank":2619,"sensor.bank_soc":82,"sensor.grid_v":240.2,"sensor.grid_a":3.2,"sensor.grid_hz":50,"sensor.grid_in":4.8,"sensor.grid_out":9.2
     };
     Object.entries(values).forEach(([id,value]) => put(id,value));
     const card = document.querySelector("#card");
     await customElements.whenDefined("home-power-flow-card");
     card.setConfig({
-      title:"Home Energy System",subtitle:"Solar · storage · grid · house",battery_total_power:"sensor.bank",house:{name:"House",power:"sensor.house"},power_box:{name:"Main Power Box",grid_import_power:"sensor.grid_import",grid_export_power:"sensor.grid_export",offgrid_power:"sensor.offgrid_from_box",voltage:"sensor.grid_v",current:"sensor.grid_a",frequency:"sensor.grid_hz",daily_import:"sensor.grid_in",daily_export:"sensor.grid_out"},
+      title:"Home Power Flow",subtitle:"Grid-tie + off-grid system",battery_total_power:"sensor.bank",battery_bank:{name:"4 Battery Packs",soc:"sensor.bank_soc"},house:{name:"House",power:"sensor.house",shed_powerpoints:"sensor.shed"},power_box:{name:"Main Power Box",grid_import_power:"sensor.grid_import",grid_export_power:"sensor.grid_export",offgrid_power:"sensor.offgrid_from_box",voltage:"sensor.grid_v",current:"sensor.grid_a",frequency:"sensor.grid_hz",daily_import:"sensor.grid_in",daily_export:"sensor.grid_out"},
       offgrid:{name:"Off-grid Inverter",output_power:"sensor.og_out_p",output_voltage:"sensor.og_out_v",output_current:"sensor.og_out_a",frequency:"sensor.og_hz",load_percent:"sensor.og_load",temperature:"sensor.og_temp",bus_voltage:"sensor.og_bus",grid_input_power:"sensor.offgrid_from_box",status:"sensor.og_status",arrays:[{name:"North Shed Array",power:"sensor.og_pv1_p",voltage:"sensor.og_pv1_v",current:"sensor.og_pv1_a"},{name:"West Shed Array",power:"sensor.og_pv2_p",voltage:"sensor.og_pv2_v",current:"sensor.og_pv2_a"}]},
       grid_tie:{name:"Grid-tie Inverter",output_power:"sensor.gt_out_p",output_voltage:"sensor.gt_out_v",output_current:"sensor.gt_out_a",frequency:"sensor.gt_hz",load_percent:"sensor.gt_load",temperature:"sensor.gt_temp",bus_voltage:"sensor.gt_bus",status:"sensor.gt_status",grid_import_power:"sensor.grid_import",grid_export_power:"sensor.grid_export",arrays:[{name:"House Array 1",power:"sensor.gt_pv1_p",voltage:"sensor.gt_pv1_v",current:"sensor.gt_pv1_a"},{name:"House Array 2",power:"sensor.gt_pv2_p",voltage:"sensor.gt_pv2_v",current:"sensor.gt_pv2_a"}]},
       batteries
