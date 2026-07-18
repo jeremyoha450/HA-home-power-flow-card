@@ -1,0 +1,132 @@
+type: custom:home-power-flow-card
+title: Home Energy System
+subtitle: Off-grid inverter, battery bank, grid-tie and house
+precision: 1
+cell_warning_delta: 0.030
+show_zero_flows: false
+
+# The three JK-BMS pack power sensors are summed for the battery flow.
+# If their sign is backwards in the animation, see README.md.
+battery_bank:
+  name: Combined Battery Bank
+  soc: sensor.total_battery_soc
+  voltage: sensor.total_battery_voltage
+  current: sensor.total_battery_current
+  capacity: sensor.total_battery_capacity
+  charging_daily: sensor.total_battery_charging_power_kwh_daily
+  discharging_daily: sensor.total_battery_discharging_power_kwh_daily
+
+house:
+  name: House and Shed Loads
+  power: sensor.to_house_power
+  shed_powerpoints: sensor.shed_em_powerpoints_power
+
+power_box:
+  name: Main Power Box
+  # Assumed to be a signed live-power sensor: positive import, negative export.
+  # Change this to sensor.powerbox_grid_power if that is your signed live reading.
+  power: sensor.grid_power_watts
+  secondary_power: sensor.powerbox_grid_power
+  voltage: sensor.powerbox_grid_voltage
+  offgrid_power: sensor.to_shed_power
+  solar_power: sensor.powerbox_solar_power
+  energy: sensor.powerbox_grid_energy
+  daily_import: sensor.grid_power_import_kwh_daily
+  daily_export: sensor.grid_power_export_kwh_daily
+
+offgrid:
+  name: MPP Solar Off-grid Inverter
+  output_power: sensor.mppsolar_inverter_output_watts_power
+  output_voltage: sensor.mppsolar_inverter_output_voltage
+  output_current: sensor.mppsolar_output_current
+  frequency: sensor.mppsolar_inverter_output_frequency
+  grid_input_power: sensor.to_shed_power
+  solar_power: sensor.mppsolar_inverter_total_pv_power
+  solar_daily: sensor.mppsolar_pv_solar_kwh_daily
+  solar_daily_alt: sensor.inverter_today_s_pv_generation
+  solar_total: sensor.inverter_total_pv_generation
+  output_daily: sensor.mppsolar_output_kwh_daily
+  status: sensor.mppsolar_inverter_status
+  mode: sensor.mppsolar_inverter_mode
+  arrays:
+    - name: Off-grid PV 1
+      power: sensor.mppsolar_inverter_pv1_charging_powe
+      voltage: sensor.mppsolar_inverter_pv1_voltage
+      current: sensor.mppsolar_inverter_pv1_current
+      # This entity was supplied without the final "r" in "power".
+      charging_power: sensor.mppsolar_inverter_pv1_charging_powe
+    - name: Off-grid PV 2
+      power: sensor.mppsolar_inverter_pv2_charging_power
+      voltage: sensor.mppsolar_inverter_pv2_voltage
+      current: sensor.mppsolar_inverter_pv2_current
+      charging_power: sensor.mppsolar_inverter_pv2_charging_power
+
+grid_tie:
+  name: Grid-tie Inverter
+  output_power: sensor.inverter_on_grid_l1_power
+  output_voltage: sensor.inverter_on_grid_l1_voltage
+  output_current: sensor.inverter_on_grid_l1_current
+  frequency: sensor.inverter_on_grid_l1_frequency
+  solar_power: sensor.powerbox_solar_power
+  grid_power: sensor.grid_power_watts
+  arrays:
+    - name: Grid-tie PV 1
+      power: sensor.inverter_pv1_power
+      voltage: sensor.inverter_pv1_voltage
+      current: sensor.inverter_pv1_current
+    - name: Grid-tie PV 2
+      power: sensor.inverter_pv2_power
+      voltage: sensor.inverter_pv2_voltage
+      current: sensor.inverter_pv2_current
+
+batteries:
+  - name: Battery Pack 1
+    soc: sensor.jkbms_soc
+    voltage: sensor.jkbms_voltage
+    current: sensor.jkbms_current
+    power: sensor.jkbms_power
+    cell_average: sensor.jkbms_avg_cell_volt
+    cell_max: sensor.jkbms_max_cell_volt
+    cell_min: sensor.jkbms_min_cell_volt
+    temperature_1: sensor.jkbms_bat_temp_1
+    temperature_2: sensor.jkbms_bat_temp_2
+    temperature_3: sensor.jkbms_bat_temp_3
+    temperature_4: sensor.jkbms_bat_temp_4
+    capacity: sensor.jkbms_battery_capacity
+    charging_power: sensor.jkbms_charging_power
+    discharging_power: sensor.jkbms_discharging_power
+    # Add cells: here when the 16 individual cell entity IDs are known.
+
+  - name: Battery Pack 2
+    soc: sensor.jkbms_bat_2_jkbms_soc
+    voltage: sensor.jkbms_bat_2_jkbms_voltage
+    current: sensor.jkbms_bat_2_jkbms_current
+    power: sensor.jkbms_bat_2_jkbms_power
+    cell_average: sensor.jkbms_bat_2_jkbms_avg_cell_volt
+    cell_max: sensor.jkbms_bat_2_jkbms_max_cell_volt
+    cell_min: sensor.jkbms_bat_2_jkbms_min_cell_volt
+    temperature_1: sensor.jkbms_bat_2_jkbms_bat_temp_1
+    temperature_2: sensor.jkbms_bat_2_jkbms_bat_temp_2
+    temperature_3: sensor.jkbms_bat_2_jkbms_bat_temp_3
+    temperature_4: sensor.jkbms_bat_2_jkbms_bat_temp_4
+    capacity: sensor.jkbms_bat_2_jkbms_battery_capacity
+    charging_power: sensor.jkbms_bat_2_jkbms_charging_power
+    discharging_power: sensor.jkbms_bat_2_jkbms_discharging_power
+    # Add cells: here when the 16 individual cell entity IDs are known.
+
+  - name: Battery Pack 3
+    soc: sensor.jkbms_bat_3_jkbms_soc
+    voltage: sensor.jkbms_bat_3_jkbms_voltage
+    current: sensor.jkbms_bat_3_jkbms_current
+    power: sensor.jkbms_bat_3_jkbms_power
+    cell_average: sensor.jkbms_bat_3_jkbms_avg_cell_volt
+    cell_max: sensor.jkbms_bat_3_jkbms_max_cell_volt
+    cell_min: sensor.jkbms_bat_3_jkbms_min_cell_volt
+    temperature_1: sensor.jkbms_bat_3_jkbms_bat_temp_1
+    temperature_2: sensor.jkbms_bat_3_jkbms_bat_temp_2
+    temperature_3: sensor.jkbms_bat_3_jkbms_bat_temp_3
+    temperature_4: sensor.jkbms_bat_3_jkbms_bat_temp_4
+    capacity: sensor.jkbms_bat_3_jkbms_battery_capacity
+    charging_power: sensor.jkbms_bat_3_jkbms_charging_power
+    discharging_power: sensor.jkbms_bat_3_jkbms_discharging_power
+    # Add cells: here when the 16 individual cell entity IDs are known.
