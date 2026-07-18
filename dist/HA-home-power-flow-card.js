@@ -331,7 +331,6 @@ class HomePowerFlowCard extends HTMLElement {
       "power-box-direction": gridImport > 0 ? "Importing from grid" : gridExport > 0 ? "Exporting to grid" : "Grid idle",
       "house-node-power": this._formatPower(housePower),
       "grid-node-power": this._formatPower(Math.abs(gridPower)),
-      "battery-direction": batteryPower >= 0 ? "Charging" : "Supplying house",
       "grid-direction": gridPower >= 0 ? "Importing" : "Exporting",
       "offgrid-status": this._state(this.config.offgrid.status)?.state || "Online",
       "grid-status": this._state(this.config.grid_tie.status)?.state || "Online",
