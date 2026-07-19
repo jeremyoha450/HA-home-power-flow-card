@@ -1,13 +1,13 @@
 type: custom:home-power-flow-card
-title: Home Power Flow
+title: Home Energy System
 precision: 1
-cell_warning_delta: 0.030
+cell_warning_delta: 0.03
 show_zero_flows: false
 show_overview: false
 details_open: false
 
-# The three JK-BMS pack power sensors are summed for the battery flow.
-# If their sign is backwards in the animation, see README.md.
+# Combined battery-bank readings. If battery_total_power is omitted, the card
+# adds the three pack power sensors.
 battery_bank:
   name: Combined Battery Bank
   soc: sensor.total_battery_soc
@@ -24,15 +24,32 @@ house:
 
 power_box:
   name: Main Power Box
-  # Signed live power: positive import, negative export.
+  # Positive imports from Grid; negative exports to Grid.
   power: sensor.powerbox_grid_power
   secondary_power: sensor.grid_power_watts
-  voltage: sensor.powerbox_grid_voltage
+  # This is the value displayed below Power Box as "To inverter".
   offgrid_power: sensor.to_shed_power
+  voltage: sensor.powerbox_grid_voltage
   solar_power: sensor.powerbox_solar_power
   energy: sensor.powerbox_grid_energy
   daily_import: sensor.grid_power_import_kwh_daily
   daily_export: sensor.grid_power_export_kwh_daily
+
+grid_tie:
+  name: Grid-tie Inverter
+  output_power: sensor.inverter_on_grid_l1_power
+  output_voltage: sensor.inverter_on_grid_l1_voltage
+  output_current: sensor.inverter_on_grid_l1_current
+  frequency: sensor.inverter_on_grid_l1_frequency
+  arrays:
+    - name: Grid-tie PV 1
+      power: sensor.inverter_pv1_power
+      voltage: sensor.inverter_pv1_voltage
+      current: sensor.inverter_pv1_current
+    - name: Grid-tie PV 2
+      power: sensor.inverter_pv2_power
+      voltage: sensor.inverter_pv2_voltage
+      current: sensor.inverter_pv2_current
 
 offgrid:
   name: MPP Solar Off-grid Inverter
@@ -40,7 +57,6 @@ offgrid:
   output_voltage: sensor.mppsolar_inverter_output_voltage
   output_current: sensor.mppsolar_output_current
   frequency: sensor.mppsolar_inverter_output_frequency
-  grid_input_power: sensor.to_shed_power
   solar_power: sensor.mppsolar_inverter_total_pv_power
   solar_daily: sensor.mppsolar_pv_solar_kwh_daily
   solar_daily_alt: sensor.inverter_today_s_pv_generation
@@ -53,31 +69,10 @@ offgrid:
       power: sensor.mppsolar_inverter_pv1_charging_powe
       voltage: sensor.mppsolar_inverter_pv1_voltage
       current: sensor.mppsolar_inverter_pv1_current
-      # This entity was supplied without the final "r" in "power".
-      charging_power: sensor.mppsolar_inverter_pv1_charging_powe
     - name: Off-grid PV 2
       power: sensor.mppsolar_inverter_pv2_charging_power
       voltage: sensor.mppsolar_inverter_pv2_voltage
       current: sensor.mppsolar_inverter_pv2_current
-      charging_power: sensor.mppsolar_inverter_pv2_charging_power
-
-grid_tie:
-  name: Grid-tie Inverter
-  output_power: sensor.inverter_on_grid_l1_power
-  output_voltage: sensor.inverter_on_grid_l1_voltage
-  output_current: sensor.inverter_on_grid_l1_current
-  frequency: sensor.inverter_on_grid_l1_frequency
-  solar_power: sensor.powerbox_solar_power
-  grid_power: sensor.powerbox_grid_power
-  arrays:
-    - name: Grid-tie PV 1
-      power: sensor.inverter_pv1_power
-      voltage: sensor.inverter_pv1_voltage
-      current: sensor.inverter_pv1_current
-    - name: Grid-tie PV 2
-      power: sensor.inverter_pv2_power
-      voltage: sensor.inverter_pv2_voltage
-      current: sensor.inverter_pv2_current
 
 batteries:
   - name: Battery Pack 1
@@ -95,7 +90,7 @@ batteries:
     capacity: sensor.jkbms_battery_capacity
     charging_power: sensor.jkbms_charging_power
     discharging_power: sensor.jkbms_discharging_power
-    # Add cells: here when the 16 individual cell entity IDs are known.
+    # cells: [sensor.pack_1_cell_1, ... sensor.pack_1_cell_16]
 
   - name: Battery Pack 2
     soc: sensor.jkbms_bat_2_jkbms_soc
@@ -112,7 +107,7 @@ batteries:
     capacity: sensor.jkbms_bat_2_jkbms_battery_capacity
     charging_power: sensor.jkbms_bat_2_jkbms_charging_power
     discharging_power: sensor.jkbms_bat_2_jkbms_discharging_power
-    # Add cells: here when the 16 individual cell entity IDs are known.
+    # cells: [sensor.pack_2_cell_1, ... sensor.pack_2_cell_16]
 
   - name: Battery Pack 3
     soc: sensor.jkbms_bat_3_jkbms_soc
@@ -129,4 +124,4 @@ batteries:
     capacity: sensor.jkbms_bat_3_jkbms_battery_capacity
     charging_power: sensor.jkbms_bat_3_jkbms_charging_power
     discharging_power: sensor.jkbms_bat_3_jkbms_discharging_power
-    # Add cells: here when the 16 individual cell entity IDs are known.
+    # cells: [sensor.pack_3_cell_1, ... sensor.pack_3_cell_16]

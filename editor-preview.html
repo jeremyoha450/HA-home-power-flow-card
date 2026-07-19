@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Home Power Flow Editor Preview</title>
+  <style>
+    :root{--primary-text-color:#f5f8ff;--secondary-text-color:#91a2bd;--secondary-background-color:#111821;--card-background-color:#0d1117;--divider-color:#293342;--primary-color:#53d6ff}body{max-width:900px;margin:0 auto;padding:24px;background:#080d14;font-family:system-ui,sans-serif}#events{margin:12px 0;color:#72e6a2;font-size:12px}
+  </style>
+</head>
+<body>
+  <div id="events">Waiting for an editor change…</div>
+  <div id="editor"></div>
+  <script>
+    customElements.define("ha-entity-picker",class extends HTMLElement{
+      connectedCallback(){if(this.shadowRoot)return;this.attachShadow({mode:"open"});this.shadowRoot.innerHTML=`<style>input{box-sizing:border-box;width:100%;height:44px;padding:0 11px;color:#f5f8ff;border:1px solid #293342;border-radius:8px;background:#0d1117}</style><input placeholder="Choose an entity">`;this.shadowRoot.querySelector("input").value=this._value||"";this.shadowRoot.querySelector("input").addEventListener("input",e=>this.dispatchEvent(new CustomEvent("value-changed",{detail:{value:e.target.value}})))}
+      set value(value){this._value=value;const input=this.shadowRoot?.querySelector("input");if(input)input.value=value||""}get value(){return this._value||""}
+    });
+  </script>
+  <script type="module" src="./home-power-flow-card.js"></script>
+  <script type="module">
+    await customElements.whenDefined("home-power-flow-card");
+    const Card=customElements.get("home-power-flow-card");
+    const stubCard=document.createElement("home-power-flow-card");
+    stubCard.setConfig(Card.getStubConfig());
+    stubCard.hass={states:{}};
+    document.body.dataset.stubValid="true";
+    const editor=Card.getConfigElement();
+    editor.setConfig(Card.getStubConfig());
+    editor.hass={states:{}};
+    editor.addEventListener("config-changed",event=>document.querySelector("#events").textContent=`Changed: ${event.detail.config.title||"Untitled card"} | Grid: ${event.detail.config.power_box?.power||"not selected"} | Cell 1: ${event.detail.config.batteries?.[0]?.cells?.[0]||"not selected"}`);
+    document.querySelector("#editor").append(editor);
+  </script>
+</body>
+</html>

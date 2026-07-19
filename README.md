@@ -11,7 +11,7 @@ The card includes:
 - an expandable grid power box with import/export readings;
 - live house consumption and grid import/export;
 - animated, direction-aware power-flow lines; and
-- built-in equipment illustrations, responsive mobile layout, and Home Assistant more-info dialogs.
+- built-in equipment illustrations, responsive mobile layout, Home Assistant more-info dialogs, and a full visual configuration editor.
 
 The default view follows the compact power-flow approach used by inverter displays: only live sources, destinations, power values, and animated paths are visible. Voltage, current, temperature, daily energy, and individual pack information are kept behind the **System details** control. Set `show_overview: true` if you also want the four summary tiles above the diagram, or `details_open: true` to start with all equipment sections visible.
 
@@ -22,8 +22,8 @@ The default view follows the compact power-flow approach used by inverter displa
 3. Add `https://github.com/jeremyoha450/HA-home-power-flow-card` and select **Dashboard** as the category.
 4. Find **Home Power Flow Card** in HACS and choose **Download**.
 5. Refresh Home Assistant after installation.
-6. Add a **Manual** card to a dashboard and paste the contents of `example-card.yaml`.
-7. Replace or adjust the example `sensor.*` entities for your system.
+6. Edit a dashboard, choose **Add card**, and select **Home Power Flow Card**.
+7. Choose your entities in the visual editor and save the card.
 
 HACS should add the dashboard resource automatically. If it does not, add this as a JavaScript module under **Settings → Dashboards → Resources**:
 
@@ -37,8 +37,8 @@ HACS should add the dashboard resource automatically. If it does not, add this a
 2. In Home Assistant, open **Settings → Dashboards → Resources**.
 3. Add `/local/HA-home-power-flow-card.js` as a **JavaScript module**.
 4. Refresh the browser. A hard refresh may be needed after replacing the file.
-5. Add a **Manual** card to a dashboard and paste the contents of `example-card.yaml`.
-6. Replace every example `sensor.*` entity with the corresponding entity from your system.
+5. Edit a dashboard, choose **Add card**, and select **Home Power Flow Card**.
+6. Choose your entities in the visual editor and save the card.
 
 If Dashboard Resources is not shown, add the resource under `lovelace.resources` in `configuration.yaml`:
 
@@ -54,10 +54,18 @@ lovelace:
 The card uses these signs to animate flow direction:
 
 - `battery_total_power`: positive is charging, negative is discharging.
-- `power_box.grid_import_power` and `power_box.grid_export_power`: separate, positive-valued sensors are preferred.
-- `offgrid.grid_input_power`: power the off-grid inverter is taking from the grid/grid-tie power box.
+- `power_box.power`: signed Grid power; positive is import and negative is export.
+- `power_box.secondary_power`: optional fallback when the primary signed sensor is unavailable or zero.
+- `power_box.grid_import_power` and `power_box.grid_export_power`: optional separate, positive-valued sensors override the signed reading.
+- `power_box.offgrid_power`: power being sent from the Power Box to the off-grid inverter (`offgrid.grid_input_power` remains a fallback).
 
 For systems with only one bidirectional meter, `grid_tie.grid_power` remains supported as a fallback: positive is import and negative is export.
+
+## Visual editor
+
+The dashboard card editor covers the complete system configuration: Grid and Power Box, house and shed, both inverters, four PV inputs, combined battery bank, three battery packs, all 48 optional cell-voltage sensors, display options, and flow thresholds.
+
+Existing YAML cards remain supported. `example-card.yaml` is provided as a cleaned, ready-to-use configuration for this system, but normal installation and editing no longer require copying or changing YAML.
 
 The compact schematic combines both existing Sunsynk views: grid and grid-tie generation meet at the power box, the power box connects to the off-grid inverter, and the off-grid inverter connects to the house, shed load, two solar inputs, and three individually visible battery packs. Each pack has its own power-flow line. Tap any main component or battery pack to open its detailed readings.
 
@@ -93,4 +101,4 @@ The desktop schematic is defined in `_flowSvg()` and the `.node-*` CSS rules in 
 
 ## Development
 
-`home-power-flow-card.js` is the readable source file. `dist/HA-home-power-flow-card.js` is the HACS distributable and must be regenerated from the source whenever the card changes.
+`home-power-flow-card.js` is the readable source file. `dist/HA-home-power-flow-card.js` is the HACS distributable and must be regenerated from the source whenever the card changes. `preview.html` tests the card and `editor-preview.html` tests the visual configuration editor locally.

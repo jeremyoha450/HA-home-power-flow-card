@@ -1,4 +1,4 @@
-const CARD_VERSION = "0.4.8";
+const CARD_VERSION = "0.5.0";
 
 const DEFAULT_CONFIG = {
   title: "Home Energy System",
@@ -24,7 +24,180 @@ const ICONS = {
   chevron: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 9 5 5 5-5"/></svg>`,
 };
 
+const EDITOR_STUB_CONFIG = {
+  title: "Home Energy System",
+  precision: 1,
+  cell_warning_delta: 0.03,
+  show_zero_flows: false,
+  show_overview: false,
+  details_open: false,
+  power_box: { name: "Power Box" },
+  house: { name: "House and Shed" },
+  grid_tie: {
+    name: "Grid-tie Inverter",
+    arrays: [{ name: "Grid-tie PV 1" }, { name: "Grid-tie PV 2" }],
+  },
+  offgrid: {
+    name: "Off-grid Inverter",
+    arrays: [{ name: "Off-grid PV 1" }, { name: "Off-grid PV 2" }],
+  },
+  battery_bank: { name: "Battery Bank" },
+  batteries: [
+    { name: "Battery Pack 1", cells: [] },
+    { name: "Battery Pack 2", cells: [] },
+    { name: "Battery Pack 3", cells: [] },
+  ],
+};
+
+const editorField = (label, path, type = "entity", helper = "") => ({ label, path, type, helper });
+const nameField = (path) => editorField("Name", path, "text");
+const pvEditorSection = (title, root) => ({
+  title,
+  fields: [
+    nameField([...root, "name"]),
+    editorField("Power", [...root, "power"]),
+    editorField("Voltage", [...root, "voltage"]),
+    editorField("Current", [...root, "current"]),
+    editorField("Charging power (optional)", [...root, "charging_power"]),
+  ],
+});
+const batteryEditorSection = (index) => ({
+  title: `Battery Pack ${index + 1}`,
+  fields: [
+    nameField(["batteries", index, "name"]),
+    editorField("State of charge", ["batteries", index, "soc"]),
+    editorField("Voltage", ["batteries", index, "voltage"]),
+    editorField("Current", ["batteries", index, "current"]),
+    editorField("Power", ["batteries", index, "power"]),
+    editorField("Average cell voltage", ["batteries", index, "cell_average"]),
+    editorField("Maximum cell voltage", ["batteries", index, "cell_max"]),
+    editorField("Minimum cell voltage", ["batteries", index, "cell_min"]),
+    editorField("Temperature 1", ["batteries", index, "temperature_1"]),
+    editorField("Temperature 2", ["batteries", index, "temperature_2"]),
+    editorField("Temperature 3", ["batteries", index, "temperature_3"]),
+    editorField("Temperature 4", ["batteries", index, "temperature_4"]),
+    editorField("Capacity", ["batteries", index, "capacity"]),
+    editorField("Charging power", ["batteries", index, "charging_power"]),
+    editorField("Discharging power", ["batteries", index, "discharging_power"]),
+    editorField("Cycles", ["batteries", index, "cycles"]),
+  ],
+  subsections: [{
+    title: "16 cell voltage sensors",
+    fields: Array.from({ length: 16 }, (_, cell) => editorField(`Cell ${cell + 1}`, ["batteries", index, "cells", cell])),
+  }],
+});
+
+const EDITOR_SECTIONS = [
+  {
+    title: "Card appearance",
+    open: true,
+    fields: [
+      editorField("Title", ["title"], "text"),
+      editorField("Decimal places", ["precision"], "number"),
+      editorField("Cell warning spread (V)", ["cell_warning_delta"], "number"),
+      editorField("Show zero-power lines", ["show_zero_flows"], "boolean"),
+      editorField("Show overview tiles", ["show_overview"], "boolean"),
+      editorField("Open details by default", ["details_open"], "boolean"),
+    ],
+  },
+  {
+    title: "Grid and Power Box",
+    open: true,
+    fields: [
+      nameField(["power_box", "name"]),
+      editorField("Signed Grid power", ["power_box", "power"], "entity", "Positive import, negative export"),
+      editorField("Power to off-grid inverter", ["power_box", "offgrid_power"]),
+      editorField("Grid voltage", ["power_box", "voltage"]),
+      editorField("Grid current", ["power_box", "current"]),
+      editorField("Grid frequency", ["power_box", "frequency"]),
+      editorField("Grid-tie solar total (optional)", ["power_box", "solar_power"]),
+      editorField("Grid energy", ["power_box", "energy"]),
+      editorField("Daily import", ["power_box", "daily_import"]),
+      editorField("Daily export", ["power_box", "daily_export"]),
+      editorField("Alternate signed Grid power", ["power_box", "secondary_power"]),
+    ],
+  },
+  {
+    title: "House and Shed",
+    fields: [
+      nameField(["house", "name"]),
+      editorField("House power", ["house", "power"]),
+      editorField("Shed powerpoints", ["house", "shed_powerpoints"]),
+    ],
+  },
+  {
+    title: "Grid-tie Inverter",
+    fields: [
+      nameField(["grid_tie", "name"]),
+      editorField("Output power", ["grid_tie", "output_power"]),
+      editorField("Output voltage", ["grid_tie", "output_voltage"]),
+      editorField("Output current", ["grid_tie", "output_current"]),
+      editorField("Frequency", ["grid_tie", "frequency"]),
+      editorField("Status", ["grid_tie", "status"]),
+      editorField("Solar total fallback", ["grid_tie", "solar_power"]),
+      editorField("Signed Grid fallback", ["grid_tie", "grid_power"]),
+    ],
+  },
+  pvEditorSection("Grid-tie PV 1", ["grid_tie", "arrays", 0]),
+  pvEditorSection("Grid-tie PV 2", ["grid_tie", "arrays", 1]),
+  {
+    title: "Off-grid Inverter",
+    fields: [
+      nameField(["offgrid", "name"]),
+      editorField("Output power", ["offgrid", "output_power"]),
+      editorField("Output voltage", ["offgrid", "output_voltage"]),
+      editorField("Output current", ["offgrid", "output_current"]),
+      editorField("Output frequency", ["offgrid", "frequency"]),
+      editorField("Grid / grid-tie input fallback", ["offgrid", "grid_input_power"]),
+      editorField("Solar total", ["offgrid", "solar_power"]),
+      editorField("Solar generated today", ["offgrid", "solar_daily"]),
+      editorField("Solar today alternate", ["offgrid", "solar_daily_alt"]),
+      editorField("Solar generation total", ["offgrid", "solar_total"]),
+      editorField("Output energy today", ["offgrid", "output_daily"]),
+      editorField("Status", ["offgrid", "status"]),
+      editorField("Mode", ["offgrid", "mode"]),
+      editorField("Load percent", ["offgrid", "load_percent"]),
+      editorField("Temperature", ["offgrid", "temperature"]),
+      editorField("Bus voltage", ["offgrid", "bus_voltage"]),
+    ],
+  },
+  pvEditorSection("Off-grid PV 1", ["offgrid", "arrays", 0]),
+  pvEditorSection("Off-grid PV 2", ["offgrid", "arrays", 1]),
+  {
+    title: "Battery Bank",
+    fields: [
+      nameField(["battery_bank", "name"]),
+      editorField("Combined battery power", ["battery_total_power"]),
+      editorField("State of charge", ["battery_bank", "soc"]),
+      editorField("Voltage", ["battery_bank", "voltage"]),
+      editorField("Current", ["battery_bank", "current"]),
+      editorField("Capacity", ["battery_bank", "capacity"]),
+      editorField("Charging energy today", ["battery_bank", "charging_daily"]),
+      editorField("Discharging energy today", ["battery_bank", "discharging_daily"]),
+    ],
+  },
+  batteryEditorSection(0),
+  batteryEditorSection(1),
+  batteryEditorSection(2),
+  {
+    title: "Flow thresholds",
+    fields: [
+      editorField("Solar minimum (W)", ["thresholds", "solar"], "number"),
+      editorField("Battery minimum (W)", ["thresholds", "battery"], "number"),
+      editorField("Grid minimum (W)", ["thresholds", "grid"], "number"),
+    ],
+  },
+];
+
 class HomePowerFlowCard extends HTMLElement {
+  static getConfigElement() {
+    return document.createElement("home-power-flow-card-editor");
+  }
+
+  static getStubConfig() {
+    return JSON.parse(JSON.stringify(EDITOR_STUB_CONFIG));
+  }
+
   setConfig(config) {
     if (!config.offgrid || !config.grid_tie || !config.house) {
       throw new Error("Home Power Flow Card needs offgrid, grid_tie, and house configuration sections.");
@@ -117,7 +290,7 @@ class HomePowerFlowCard extends HTMLElement {
             ${offgridArrays.slice(0, 2).map((array, i) => `<button class="node pv-node node-offgrid-pv-${i + 1}" type="button" data-open-panel="offgrid-array-${i}">${this._nodeHead(ICONS.panel, `PV${i + 1}`, `offgrid-pv-${i}`)}</button>`).join("")}
             <button class="total-node node-offgrid-solar" type="button" data-open-panel="offgrid-array-0"><strong data-value="offgrid-solar-total">—</strong></button>
             <button class="node node-power-box" type="button" data-open-panel="power-box-panel">
-              ${this._nodeHead(ICONS.powerbox, "Power box", "power-box-power")}
+              ${this._nodeHead(ICONS.powerbox, "Power box", "power-box-power", "To inverter")}
             </button>
             <button class="node node-house" type="button" data-open-panel="loads-panel">
               ${this._nodeHead(ICONS.house, "House", "house-node-power")}
@@ -162,8 +335,8 @@ class HomePowerFlowCard extends HTMLElement {
     this.shadowRoot.addEventListener("click", (event) => this._handleClick(event));
   }
 
-  _nodeHead(icon, label, valueKey) {
-    return `<div class="node-icon">${icon}</div><div class="node-copy"><b>${this._escape(label)}</b><strong data-value="${valueKey}">—</strong></div>`;
+  _nodeHead(icon, label, valueKey, sublabel = "") {
+    return `<div class="node-icon">${icon}</div><div class="node-copy"><b>${this._escape(label)}</b>${sublabel ? `<small>${this._escape(sublabel)}</small>` : ""}<strong data-value="${valueKey}">—</strong></div>`;
   }
 
   _flowSvg() {
@@ -544,6 +717,7 @@ class HomePowerFlowCard extends HTMLElement {
       .node-icon { width:31px; height:31px; display:grid; place-items:center; }
       .node-icon svg,.equipment-icon svg { width:29px; height:29px; fill:none; stroke:currentColor; stroke-width:2.4; stroke-linecap:round; stroke-linejoin:round; }
       .node-copy { width:100%; min-width:0; text-align:center; } .node-copy b { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:#98a8bd; font-size:8px; font-weight:500; }
+      .node-copy small { display:block; color:#7f91a8; font-size:7px; line-height:8px; white-space:nowrap; }
       .node-copy strong { display:inline-block; min-width:62px; margin-top:2px; padding:3px 5px; border:1px solid currentColor; border-radius:5px; color:currentColor; font-size:12px; text-align:center; white-space:nowrap; background:#0d1117; }
       .total-node { position:absolute; z-index:2; width:76px; min-height:34px; padding:2px; color:var(--solar); border:0; background:#0d1117; cursor:pointer; transform:translate(-50%,-50%); }
       .total-node strong { display:inline-block; min-width:70px; padding:4px 6px; border:1px solid currentColor; border-radius:6px; background:#0d1117; font-size:14px; white-space:nowrap; }
@@ -558,7 +732,7 @@ class HomePowerFlowCard extends HTMLElement {
       .battery-stack svg { width:25px; height:31px; fill:#0d1117; stroke:currentColor; stroke-width:2.6; }
       .pv-node { width:64px; min-height:72px; color:var(--solar); }
       .pv-node .node-icon { width:34px; height:30px; }.pv-node .node-icon svg{width:34px;height:28px}.pv-node .node-copy strong{min-width:56px;border:0;padding:1px;font-size:12px;color:var(--solar)}
-      .node-grid{left:8%;top:6%;width:72px;color:var(--grid)} .node-power-box{left:22%;top:58.3%;width:72px;color:var(--grid)}
+      .node-grid{left:8%;top:6%;width:72px;color:var(--grid)} .node-power-box{left:22%;top:59%;width:72px;color:var(--grid)}
       .node-grid .node-icon,.node-power-box .node-icon{width:27px;height:27px}.node-grid .node-icon svg,.node-power-box .node-icon svg{width:25px}.node-grid .node-copy strong,.node-power-box .node-copy strong{min-width:55px;font-size:11px}
       .node-grid-pv-1{left:13%;top:18%}.node-grid-pv-2{left:27%;top:18%}.node-grid-solar{left:20%;top:28%}.node-grid-inverter{left:20%;top:40%;color:var(--load)}
       .node-offgrid-pv-1{left:43%;top:18%}.node-offgrid-pv-2{left:57%;top:18%}.node-offgrid-solar{left:50%;top:28%}.node-offgrid-inverter{left:50%;top:49%;color:var(--load)}
@@ -593,16 +767,180 @@ class HomePowerFlowCard extends HTMLElement {
       @media(max-width:700px){
         .card-head{padding:11px 14px 1px}.overview{grid-template-columns:repeat(2,1fr);padding:0 14px 12px}.diagram{height:600px}
         .node{width:76px}.node-icon{width:28px;height:28px}.node-icon svg{width:27px}.node-copy strong{min-width:58px;font-size:11px}.node-copy b{font-size:8px}
-        .pv-node{width:58px}.pv-node .node-copy strong{min-width:52px;font-size:11px}.node-offgrid-inverter{width:96px}.node-offgrid-inverter .node-icon{width:52px;height:56px}.node-offgrid-inverter .node-icon svg{width:50px;height:54px}
+        .pv-node{width:58px}.pv-node .node-copy strong{min-width:50px;font-size:10px}.node-offgrid-inverter{width:96px}.node-offgrid-inverter .node-icon{width:52px;height:56px}.node-offgrid-inverter .node-icon svg{width:50px;height:54px}
+        .node-power-box{width:78px}.node-power-box .node-copy b{font-size:7px}.node-power-box .node-copy small{font-size:6px}
+        .node-battery-bank{width:100px}.output-electrical{left:60%;top:43%;font-size:9px;transform:translate(0,-50%)}
         .panel-grid,.batteries-grid{grid-template-columns:1fr}
       }
-      @media(max-width:390px){.metric strong{font-size:12px}.diagram{height:580px}.node{width:66px}.node-grid{left:8%;width:60px}.node-power-box{left:22%;width:62px}.pv-node{width:52px}.node-grid-pv-1{left:12%}.node-grid-pv-2{left:28%}.node-offgrid-pv-1{left:42%}.node-offgrid-pv-2{left:58%}.node-offgrid-inverter{left:50%;width:88px}.node-house,.node-shed{left:88%}.battery-row{left:12%;right:12%}.pack-node{width:52px}.pack-icon svg{width:16px}.pack-node b{font-size:7px}}
+      @media(max-width:390px){.metric strong{font-size:12px}.diagram{height:580px}.node{width:66px}.node-grid{left:8%;width:60px}.node-power-box{left:22%;width:74px}.node-battery-bank{width:96px}.pv-node{width:52px}.node-grid-pv-1{left:12%}.node-grid-pv-2{left:28%}.node-offgrid-pv-1{left:42%}.node-offgrid-pv-2{left:58%}.node-offgrid-inverter{left:50%;width:88px}.node-house,.node-shed{left:88%}.battery-row{left:12%;right:12%}.pack-node{width:52px}.pack-icon svg{width:16px}.pack-node b{font-size:7px}}
     `;
+  }
+}
+
+class HomePowerFlowCardEditor extends HTMLElement {
+  constructor() {
+    super();
+    this.attachShadow({ mode: "open" });
+    this._fieldPaths = new Map();
+    this._openSections = new Set();
+  }
+
+  setConfig(config) {
+    if (this.shadowRoot) {
+      this.shadowRoot.querySelectorAll("details[open]").forEach((section) => {
+        if (section.dataset.section) this._openSections.add(section.dataset.section);
+      });
+    }
+    this._config = JSON.parse(JSON.stringify(config || EDITOR_STUB_CONFIG));
+    this._render();
+  }
+
+  set hass(hass) {
+    this._hass = hass;
+    this._syncEntityPickers();
+  }
+
+  get hass() {
+    return this._hass;
+  }
+
+  _escape(value) {
+    return String(value ?? "")
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#039;");
+  }
+
+  _valueAt(path) {
+    return path.reduce((value, key) => value?.[key], this._config);
+  }
+
+  _fieldId(field) {
+    const id = `editor-field-${this._fieldPaths.size}`;
+    this._fieldPaths.set(id, field.path);
+    return id;
+  }
+
+  _renderField(field) {
+    const id = this._fieldId(field);
+    const value = this._valueAt(field.path);
+    if (field.type === "boolean") {
+      return `<label class="toggle field"><span>${this._escape(field.label)}</span><input data-editor-field="${id}" type="checkbox" ${value ? "checked" : ""}></label>`;
+    }
+    if (field.type === "text" || field.type === "number") {
+      const numberOptions = field.type === "number" ? ' type="number" step="any"' : ' type="text"';
+      return `<label class="field"><span>${this._escape(field.label)}</span><input class="editor-input" data-editor-field="${id}"${numberOptions} value="${this._escape(value ?? "")}">${field.helper ? `<small>${this._escape(field.helper)}</small>` : ""}</label>`;
+    }
+    return `<label class="field entity-field"><span>${this._escape(field.label)}</span><ha-entity-picker data-editor-field="${id}"></ha-entity-picker>${field.helper ? `<small>${this._escape(field.helper)}</small>` : ""}</label>`;
+  }
+
+  _renderSection(section, index) {
+    const key = `section-${index}`;
+    const open = section.open || this._openSections.has(key);
+    const subsections = (section.subsections || []).map((subsection, subIndex) => {
+      const subKey = `${key}-sub-${subIndex}`;
+      const subOpen = this._openSections.has(subKey);
+      return `<details class="subsection" data-section="${subKey}" ${subOpen ? "open" : ""}><summary>${this._escape(subsection.title)}</summary><div class="fields">${subsection.fields.map((field) => this._renderField(field)).join("")}</div></details>`;
+    }).join("");
+    return `<details class="section" data-section="${key}" ${open ? "open" : ""}><summary>${this._escape(section.title)}</summary><div class="section-body"><div class="fields">${section.fields.map((field) => this._renderField(field)).join("")}</div>${subsections}</div></details>`;
+  }
+
+  _render() {
+    if (!this._config) return;
+    this._fieldPaths.clear();
+    this.shadowRoot.innerHTML = `
+      <style>
+        :host { display:block; color:var(--primary-text-color); }
+        * { box-sizing:border-box; }
+        .intro { margin:0 0 12px; padding:11px 12px; border-radius:10px; color:var(--secondary-text-color); background:var(--secondary-background-color); font-size:12px; line-height:1.45; }
+        .section,.subsection { overflow:hidden; margin:0 0 9px; border:1px solid var(--divider-color); border-radius:10px; background:var(--card-background-color); }
+        summary { padding:12px 13px; color:var(--primary-text-color); font-size:14px; font-weight:600; cursor:pointer; user-select:none; }
+        .section-body { padding:0 12px 12px; }
+        .fields { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:11px; }
+        .field { min-width:0; display:flex; flex-direction:column; gap:5px; color:var(--secondary-text-color); font-size:12px; }
+        .field > span { min-height:16px; }
+        .field small { color:var(--secondary-text-color); font-size:10px; line-height:1.3; }
+        .editor-input { width:100%; height:44px; padding:0 11px; color:var(--primary-text-color); border:1px solid var(--divider-color); border-radius:8px; outline:none; background:var(--card-background-color); font:inherit; }
+        .editor-input:focus { border-color:var(--primary-color); box-shadow:0 0 0 1px var(--primary-color); }
+        ha-entity-picker { width:100%; }
+        .toggle { grid-column:span 1; min-height:44px; flex-direction:row; align-items:center; justify-content:space-between; padding:0 10px; border:1px solid var(--divider-color); border-radius:8px; }
+        .toggle input { width:19px; height:19px; accent-color:var(--primary-color); }
+        .subsection { grid-column:1/-1; margin:12px 0 0; background:var(--secondary-background-color); }
+        .subsection summary { font-size:12px; }
+        .subsection .fields { padding:0 11px 11px; }
+        @media(max-width:600px){.fields{grid-template-columns:1fr}.toggle{grid-column:auto}}
+      </style>
+      <p class="intro">Choose your Home Assistant entities below. Changes are saved by the dashboard editor; YAML editing is optional.</p>
+      ${EDITOR_SECTIONS.map((section, index) => this._renderSection(section, index)).join("")}
+    `;
+    this._bindFields();
+    this._syncEntityPickers();
+  }
+
+  _bindFields() {
+    this.shadowRoot.querySelectorAll("[data-editor-field]").forEach((control) => {
+      const path = this._fieldPaths.get(control.dataset.editorField);
+      if (!path) return;
+      if (control.localName === "ha-entity-picker") {
+        control.addEventListener("value-changed", (event) => this._updatePath(path, event.detail?.value ?? event.target.value ?? ""));
+      } else {
+        control.addEventListener(control.type === "checkbox" ? "change" : "input", (event) => {
+          const input = event.currentTarget;
+          const value = input.type === "checkbox" ? input.checked : input.type === "number" && input.value !== "" ? Number(input.value) : input.value;
+          this._updatePath(path, value);
+        });
+      }
+    });
+  }
+
+  _syncEntityPickers() {
+    if (!this.shadowRoot || !this._config) return;
+    this.shadowRoot.querySelectorAll("ha-entity-picker[data-editor-field]").forEach((picker) => {
+      const path = this._fieldPaths.get(picker.dataset.editorField);
+      if (this._hass) picker.hass = this._hass;
+      picker.value = this._valueAt(path) || "";
+      picker.label = "";
+      picker.allowCustomEntity = true;
+    });
+  }
+
+  _updatePath(path, value) {
+    const config = JSON.parse(JSON.stringify(this._config || {}));
+    let target = config;
+    path.forEach((key, index) => {
+      if (index === path.length - 1) {
+        if (value === "" || value === undefined || value === null) {
+          if (Array.isArray(target)) {
+            target[key] = "";
+            while (target.length && !target[target.length - 1]) target.pop();
+          } else {
+            delete target[key];
+          }
+        } else {
+          target[key] = value;
+        }
+        return;
+      }
+      if (target[key] === undefined || target[key] === null) target[key] = typeof path[index + 1] === "number" ? [] : {};
+      target = target[key];
+    });
+    this._config = config;
+    this.dispatchEvent(new CustomEvent("config-changed", {
+      bubbles: true,
+      composed: true,
+      detail: { config },
+    }));
   }
 }
 
 if (!customElements.get("home-power-flow-card")) {
   customElements.define("home-power-flow-card", HomePowerFlowCard);
+}
+
+if (!customElements.get("home-power-flow-card-editor")) {
+  customElements.define("home-power-flow-card-editor", HomePowerFlowCardEditor);
 }
 
 window.customCards = window.customCards || [];
