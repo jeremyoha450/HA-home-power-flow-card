@@ -1,4 +1,4 @@
-const CARD_VERSION = "0.7.5";
+const CARD_VERSION = "0.7.6";
 
 const DEFAULT_CONFIG = {
   title: "Home Energy System",
@@ -99,7 +99,7 @@ const EDITOR_SECTIONS = [
     fields: [
       editorField("Grid name", ["power_box", "grid_name"], "text"),
       editorField("Grid icon", ["power_box", "grid_icon"], "icon", "Search Home Assistant icons"),
-      editorField("Grid icon size (%)", ["power_box", "grid_icon_size"], "number", "50 to 125; default is 100"),
+      editorField("Grid icon size (%)", ["power_box", "grid_icon_size"], "number", "50 to 200; default is 100"),
       editorField("Signed Grid power", ["power_box", "power"], "entity", "Positive import, negative export"),
       editorField("Ignore phantom Grid power up to (W)", ["power_box", "phantom_power_threshold"], "number", "Values from zero through this amount are treated as no Grid flow"),
       editorField("Grid voltage", ["power_box", "voltage"]),
@@ -117,7 +117,7 @@ const EDITOR_SECTIONS = [
     fields: [
       nameField(["power_box", "name"]),
       editorField("Power Box icon", ["power_box", "icon"], "icon", "Search Home Assistant icons"),
-      editorField("Power Box icon size (%)", ["power_box", "icon_size"], "number", "50 to 125; default is 100"),
+      editorField("Power Box icon size (%)", ["power_box", "icon_size"], "number", "50 to 200; default is 100"),
       editorField("Power to off-grid inverter", ["power_box", "offgrid_power"]),
       editorField("Ignore phantom Power Box power up to (W)", ["power_box", "offgrid_phantom_power_threshold"], "number", "Values from zero through this amount are treated as no flow to the Off-grid inverter"),
     ],
@@ -130,11 +130,11 @@ const EDITOR_SECTIONS = [
       editorField("Additional 1 name", ["house", "additional_1_name"], "text", "Leave blank to hide this load"),
       editorField("Additional 1 power", ["house", "additional_1_power"]),
       editorField("Additional 1 icon", ["house", "additional_1_icon"], "icon", "Search Home Assistant icons"),
-      editorField("Additional 1 icon size (%)", ["house", "additional_1_icon_size"], "number", "50 to 125; default is 100"),
+      editorField("Additional 1 icon size (%)", ["house", "additional_1_icon_size"], "number", "50 to 200; default is 100"),
       editorField("Additional 2 name", ["house", "additional_2_name"], "text", "Leave blank to hide this load"),
       editorField("Additional 2 power", ["house", "additional_2_power"]),
       editorField("Additional 2 icon", ["house", "additional_2_icon"], "icon", "Search Home Assistant icons"),
-      editorField("Additional 2 icon size (%)", ["house", "additional_2_icon_size"], "number", "50 to 125; default is 100"),
+      editorField("Additional 2 icon size (%)", ["house", "additional_2_icon_size"], "number", "50 to 200; default is 100"),
     ],
   },
   {
@@ -147,7 +147,7 @@ const EDITOR_SECTIONS = [
       editorField("Frequency", ["grid_tie", "frequency"]),
       editorField("Status", ["grid_tie", "status"]),
       editorField("Icon", ["grid_tie", "icon"], "icon", "Search Home Assistant icons"),
-      editorField("Icon size (%)", ["grid_tie", "icon_size"], "number", "50 to 125; default is 100"),
+      editorField("Icon size (%)", ["grid_tie", "icon_size"], "number", "50 to 200; default is 100"),
       editorField("Solar total fallback", ["grid_tie", "solar_power"]),
     ],
   },
@@ -172,7 +172,7 @@ const EDITOR_SECTIONS = [
       editorField("Status", ["offgrid", "status"]),
       editorField("Mode", ["offgrid", "mode"]),
       editorField("Icon", ["offgrid", "icon"], "icon", "Search Home Assistant icons"),
-      editorField("Icon size (%)", ["offgrid", "icon_size"], "number", "50 to 125; default is 100"),
+      editorField("Icon size (%)", ["offgrid", "icon_size"], "number", "50 to 200; default is 100"),
       editorField("Load percent", ["offgrid", "load_percent"]),
       editorField("Temperature", ["offgrid", "temperature"]),
       editorField("Bus voltage", ["offgrid", "bus_voltage"]),
@@ -360,7 +360,7 @@ class HomePowerFlowCard extends HTMLElement {
 
   _iconScale(iconSize) {
     const requested = Number(iconSize);
-    return Math.min(1.25, Math.max(0.5, Number.isFinite(requested) ? requested / 100 : 1));
+    return Math.min(2, Math.max(0.5, Number.isFinite(requested) ? requested / 100 : 1));
   }
 
   _nodeHead(icon, label, valueKey, sublabel = "", iconSize = 100) {

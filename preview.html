@@ -41,7 +41,7 @@
     const additionalCount = Math.max(0, Math.min(2, Number(requestedAdditionalCount ?? 2)));
     const phantomPowerThreshold = Math.max(0, Number(requestedPhantomThreshold ?? 20));
     const powerBoxPhantomThreshold = Math.max(0, Number(requestedPowerBoxPhantomThreshold ?? 20));
-    const iconSize = Math.min(125, Math.max(50, Number(requestedIconSize ?? 100)));
+    const iconSize = Math.min(200, Math.max(50, Number(requestedIconSize ?? 100)));
     await customElements.whenDefined("home-power-flow-card");
     card.setConfig({
       title:"Home Energy System",battery_total_power:"sensor.bank",battery_bank:{name:"3 Battery Packs",soc:"sensor.bank_soc",current:"sensor.bank_current"},house:{name:"House and Additional",power:"sensor.house",additional_1_name:additionalCount>=1?"Shed":"",additional_1_power:"sensor.shed",additional_1_icon:"mdi:garage",additional_1_icon_size:iconSize,additional_2_name:additionalCount>=2?"Pool":"",additional_2_power:"sensor.pool",additional_2_icon:"mdi:pool",additional_2_icon_size:iconSize},power_box:{name:"Distribution Board",icon:"mdi:electric-switchboard",icon_size:iconSize,grid_name:"Utility Grid",grid_icon:"mdi:transmission-tower",grid_icon_size:iconSize,calculate_current:true,phantom_power_threshold:phantomPowerThreshold,offgrid_phantom_power_threshold:powerBoxPhantomThreshold,power:"sensor.grid_primary",offgrid_power:"sensor.offgrid_from_box",voltage:"sensor.grid_v",current:"sensor.grid_a",frequency:"sensor.grid_hz",daily_import:"sensor.grid_in",daily_export:"sensor.grid_out"},
