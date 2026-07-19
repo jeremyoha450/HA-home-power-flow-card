@@ -1,13 +1,13 @@
 type: custom:home-power-flow-card
 title: Home Power Flow
-subtitle: Grid-tie + off-grid system
+subtitle: ""
 precision: 1
 cell_warning_delta: 0.030
 show_zero_flows: false
 show_overview: false
 details_open: false
 
-# The four JK-BMS pack power sensors are summed for the battery flow.
+# The three JK-BMS pack power sensors are summed for the battery flow.
 # If their sign is backwards in the animation, see README.md.
 battery_bank:
   name: Combined Battery Bank
@@ -131,23 +131,4 @@ batteries:
     capacity: sensor.jkbms_bat_3_jkbms_battery_capacity
     charging_power: sensor.jkbms_bat_3_jkbms_charging_power
     discharging_power: sensor.jkbms_bat_3_jkbms_discharging_power
-    # Add cells: here when the 16 individual cell entity IDs are known.
-
-  # Battery 4 entity names follow the same naming pattern as packs 2 and 3.
-  # Adjust these IDs if your fourth JK-BMS device uses a different prefix.
-  - name: Battery Pack 4
-    soc: sensor.jkbms_bat_4_jkbms_soc
-    voltage: sensor.jkbms_bat_4_jkbms_voltage
-    current: sensor.jkbms_bat_4_jkbms_current
-    power: sensor.jkbms_bat_4_jkbms_power
-    cell_average: sensor.jkbms_bat_4_jkbms_avg_cell_volt
-    cell_max: sensor.jkbms_bat_4_jkbms_max_cell_volt
-    cell_min: sensor.jkbms_bat_4_jkbms_min_cell_volt
-    temperature_1: sensor.jkbms_bat_4_jkbms_bat_temp_1
-    temperature_2: sensor.jkbms_bat_4_jkbms_bat_temp_2
-    temperature_3: sensor.jkbms_bat_4_jkbms_bat_temp_3
-    temperature_4: sensor.jkbms_bat_4_jkbms_bat_temp_4
-    capacity: sensor.jkbms_bat_4_jkbms_battery_capacity
-    charging_power: sensor.jkbms_bat_4_jkbms_charging_power
-    discharging_power: sensor.jkbms_bat_4_jkbms_discharging_power
     # Add cells: here when the 16 individual cell entity IDs are known.

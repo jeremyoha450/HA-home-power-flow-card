@@ -1,4 +1,4 @@
-const CARD_VERSION = "0.3.0";
+const CARD_VERSION = "0.3.1";
 
 const DEFAULT_CONFIG = {
   title: "Home Energy System",
@@ -90,11 +90,8 @@ class HomePowerFlowCard extends HTMLElement {
       <style>${this._styles()}</style>
       <ha-card>
         <div class="card-head compact-head">
-          <div>
-            <h1>${this._escape(this.config.title)}</h1>
-            <p>${this._escape(this.config.subtitle)}</p>
-          </div>
-          <div class="status-pill"><span></span><b>LIVE</b></div>
+          <h1>${this._escape(this.config.title)}</h1>
+          ${this.config.subtitle ? `<p>${this._escape(this.config.subtitle)}</p>` : ""}
         </div>
 
         ${this.config.show_overview ? `<div class="overview">
@@ -109,45 +106,36 @@ class HomePowerFlowCard extends HTMLElement {
             ${this._flowSvg()}
             <button class="node node-offgrid-solar" type="button" data-open-panel="offgrid-array-0">
               ${this._nodeHead(ICONS.panel, "Off-grid solar", "offgrid-solar-total")}
-              <div class="node-sub">2 PV arrays</div>
             </button>
             <button class="node node-grid-solar" type="button" data-open-panel="grid-array-0">
               ${this._nodeHead(ICONS.sun, "Grid-tie solar", "grid-solar-total")}
-              <div class="node-sub">2 PV arrays</div>
             </button>
             <button class="node node-offgrid-inverter" type="button" data-open-panel="offgrid-inverter-panel">
-              ${this._nodeHead(ICONS.inverter, this.config.offgrid.name || "Off-grid inverter", "offgrid-output")}
-              <div class="node-sub" data-value="offgrid-status">—</div>
+              ${this._nodeHead(ICONS.inverter, "Off-grid inverter", "offgrid-output")}
             </button>
             <button class="node node-grid-inverter" type="button" data-open-panel="grid-inverter-panel">
-              ${this._nodeHead(ICONS.inverter, this.config.grid_tie.name || "Grid-tie inverter", "grid-output")}
-              <div class="node-sub" data-value="grid-status">—</div>
+              ${this._nodeHead(ICONS.inverter, "Grid-tie inverter", "grid-output")}
             </button>
             <button class="node node-power-box" type="button" data-open-panel="power-box-panel">
-              ${this._nodeHead(ICONS.grid, this.config.power_box?.name || "Power box", "power-box-power")}
-              <div class="node-sub" data-value="power-box-direction">Grid connection</div>
+              ${this._nodeHead(ICONS.grid, "Power box", "power-box-power")}
             </button>
             <button class="node node-house" type="button" data-open-panel="loads-panel">
-              ${this._nodeHead(ICONS.house, this.config.house.name || "House", "house-node-power")}
-              <div class="node-sub">Live consumption</div>
+              ${this._nodeHead(ICONS.house, "House", "house-node-power")}
             </button>
             <button class="node node-shed" type="button" data-open-panel="loads-panel">
-              ${this._nodeHead(ICONS.house, "Shed loads", "shed-node-power")}
-              <div class="node-sub">Separate load</div>
+              ${this._nodeHead(ICONS.house, "Shed", "shed-node-power")}
             </button>
             <button class="node node-grid" type="button" data-open-panel="power-box-panel">
               ${this._nodeHead(ICONS.grid, "Utility grid", "grid-node-power")}
-              <div class="node-sub" data-value="grid-direction">—</div>
             </button>
             <button class="node node-battery-bank" type="button" data-open-panel="battery-bank-panel">
-              <div class="battery-stack">${ICONS.battery}${ICONS.battery}${ICONS.battery}${ICONS.battery}</div>
-              <div class="node-copy"><b>${this._escape(this.config.battery_bank?.name || `${batteries.length} Battery Packs`)}</b><strong data-value="battery-soc">—</strong></div>
-              <div class="node-sub" data-value="battery-direction">—</div>
+              <div class="battery-stack">${ICONS.battery}</div>
+              <div class="node-copy"><b>Battery bank</b><strong data-value="battery-soc">—</strong></div>
             </button>
-            <div class="battery-row">
+            <div class="battery-row" style="--battery-count:${Math.max(1, batteries.length)}">
               ${batteries.map((battery, i) => `<button class="pack-node" type="button" data-open-panel="battery-${i}">
                 <span class="pack-icon">${ICONS.battery}</span>
-                <span><b>${this._escape(battery.name || `Pack ${i + 1}`)}</b><strong data-value="battery-${i}-soc">—</strong><small data-value="battery-${i}-power">—</small></span>
+                <span><b>P${i + 1}</b><strong data-value="battery-${i}-soc">—</strong><small data-value="battery-${i}-power">—</small></span>
               </button>`).join("")}
             </div>
           </div>
@@ -180,8 +168,8 @@ class HomePowerFlowCard extends HTMLElement {
   _flowSvg() {
     const count = Math.max(1, (this.config.batteries || []).length);
     const packBranches = Array.from({ length: count }, (_, i) => {
-      const x = count === 1 ? 250 : 70 + (360 * i / (count - 1));
-      return `<path class="flow battery-flow battery-branch" d="M250 385 L${x.toFixed(1)} 385 L${x.toFixed(1)} 423"/>`;
+      const x = count === 1 ? 250 : 100 + (300 * i / (count - 1));
+      return `<path id="flow-battery-${i}" class="flow battery-flow battery-branch" d="M250 385 L${x.toFixed(1)} 385 L${x.toFixed(1)} 423"/>`;
     }).join("");
     return `<svg class="flow-lines" viewBox="0 0 500 480" preserveAspectRatio="none" aria-hidden="true">
       <defs>
@@ -395,10 +383,9 @@ class HomePowerFlowCard extends HTMLElement {
     this._setFlow("flow-gridtie-box", gridOutput, 20);
     this._setFlow("flow-box-inverter", offgridGridPower, this.config.thresholds.grid, false);
     this._setFlow("flow-battery", batteryPower, this.config.thresholds.battery, batteryPower < 0);
-    this.shadowRoot.querySelectorAll(".battery-branch").forEach((line) => {
-      line.classList.toggle("active", Math.abs(batteryPower) >= this.config.thresholds.battery);
-      line.classList.toggle("reverse", batteryPower < 0);
-      line.style.setProperty("--flow-speed", `${Math.max(0.55, 2.2 - Math.min(Math.abs(batteryPower) / 2500, 1.5))}s`);
+    batteries.forEach((battery, i) => {
+      const packPower = this._number(battery.power);
+      this._setFlow(`flow-battery-${i}`, packPower, this.config.thresholds.battery, packPower < 0);
     });
     this._setFlow("flow-grid", gridPower, this.config.thresholds.grid, gridPower < 0);
   }
@@ -492,8 +479,8 @@ class HomePowerFlowCard extends HTMLElement {
       :host { --solar:#ffbd3b; --load:#53d6ff; --battery:#72e6a2; --grid:#b48cff; --ink:#f5f8ff; --muted:#91a2bd; display:block; }
       * { box-sizing:border-box; }
       ha-card { overflow:hidden; color:var(--ink); background:radial-gradient(circle at 50% 35%,rgba(29,48,62,.28),transparent 48%),#0d1117; border:1px solid rgba(255,255,255,.07); box-shadow:0 12px 35px rgba(0,0,0,.2); }
-      .card-head { display:flex; justify-content:space-between; align-items:flex-start; padding:17px 19px 8px; }
-      h1 { margin:0; font-size:18px; letter-spacing:-.01em; } .card-head p { margin:3px 0 0; color:var(--muted); font-size:11px; }
+      .card-head { display:block; padding:13px 16px 2px; text-align:center; }
+      h1 { margin:0; color:#aebbd0; font-size:15px; font-weight:600; letter-spacing:.01em; } .card-head p { margin:2px 0 0; color:var(--muted); font-size:9px; }
       .status-pill { display:flex; align-items:center; gap:7px; padding:7px 10px; border:1px solid rgba(114,230,162,.22); border-radius:99px; color:#9cf0bd; background:rgba(114,230,162,.08); font-size:10px; letter-spacing:.12em; }
       .status-pill span { width:7px; height:7px; border-radius:50%; background:#72e6a2; box-shadow:0 0 10px #72e6a2; animation:pulse 2s infinite; }
       .overview { display:grid; grid-template-columns:repeat(4,1fr); gap:9px; padding:0 27px 20px; }
@@ -501,33 +488,33 @@ class HomePowerFlowCard extends HTMLElement {
       .metric span { display:block; color:var(--muted); font-size:10px; text-transform:uppercase; letter-spacing:.07em; margin-bottom:5px; }
       .metric strong { font-size:14px; white-space:nowrap; } .solar-metric strong{color:var(--solar)} .battery-metric strong{color:var(--battery)} .grid-metric strong{color:var(--grid)}
       .diagram-wrap { padding:0 8px 6px; }
-      .diagram { position:relative; width:100%; max-width:560px; height:480px; margin:0 auto; overflow:hidden; border:0; border-radius:12px; background:transparent; }
+      .diagram { position:relative; width:100%; max-width:560px; height:450px; margin:0 auto; overflow:hidden; border:0; border-radius:12px; background:transparent; }
       .flow-lines { position:absolute; inset:0; width:100%; height:100%; z-index:1; }
       .flow { fill:none; stroke-width:2; stroke-linecap:round; opacity:.18; transition:opacity .3s; vector-effect:non-scaling-stroke; }
-      .flow.active { opacity:1; stroke-dasharray:2 10; animation:flow var(--flow-speed,1.3s) linear infinite; filter:drop-shadow(0 0 3px currentColor); }
+      .flow.active { opacity:1; stroke-dasharray:2 8; animation:flow var(--flow-speed,1.3s) linear infinite; filter:drop-shadow(0 0 2px currentColor); will-change:stroke-dashoffset; }
       .flow.reverse { animation-direction:reverse; }
       .solar-flow { stroke:var(--solar); color:var(--solar); } .load-flow{stroke:var(--load);color:var(--load)} .battery-flow{stroke:var(--battery);color:var(--battery)} .grid-flow{stroke:var(--grid);color:var(--grid)}
       .arrow { stroke:none; } .solar-arrow{fill:var(--solar)} .load-arrow{fill:var(--load)} .battery-arrow{fill:var(--battery)} .grid-arrow{fill:var(--grid)}
-      .node { position:absolute; z-index:2; display:grid; grid-template-columns:34px 1fr; align-items:center; gap:6px; width:126px; min-height:60px; padding:5px; color:var(--load); border:0; background:transparent; text-align:left; cursor:pointer; transform:translate(-50%,-50%); }
+      .node { position:absolute; z-index:2; display:grid; grid-template-columns:31px 1fr; align-items:center; gap:4px; width:116px; min-height:50px; padding:3px; color:var(--load); border:0; background:transparent; text-align:left; cursor:pointer; transform:translate(-50%,-50%); }
       .node:hover,.pack-node:hover { background:rgba(255,255,255,.045); border-radius:9px; }
-      .node-icon { width:38px; height:38px; display:grid; place-items:center; }
-      .node-icon svg,.equipment-icon svg { width:34px; height:34px; fill:none; stroke:currentColor; stroke-width:2.4; stroke-linecap:round; stroke-linejoin:round; }
-      .node-copy { min-width:0; } .node-copy b { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:#aebbd0; font-size:10px; font-weight:500; }
-      .node-copy strong { display:inline-block; min-width:72px; margin-top:4px; padding:4px 6px; border:1px solid currentColor; border-radius:6px; color:currentColor; font-size:13px; text-align:center; white-space:nowrap; background:#0d1117; }
+      .node-icon { width:31px; height:31px; display:grid; place-items:center; }
+      .node-icon svg,.equipment-icon svg { width:29px; height:29px; fill:none; stroke:currentColor; stroke-width:2.4; stroke-linecap:round; stroke-linejoin:round; }
+      .node-copy { min-width:0; } .node-copy b { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:#98a8bd; font-size:8px; font-weight:500; }
+      .node-copy strong { display:inline-block; min-width:62px; margin-top:2px; padding:3px 5px; border:1px solid currentColor; border-radius:5px; color:currentColor; font-size:12px; text-align:center; white-space:nowrap; background:#0d1117; }
       .node-sub { position:absolute; left:45px; bottom:-1px; color:var(--muted); font-size:8px; white-space:nowrap; }
-      .node-offgrid-inverter,.node-grid-inverter { padding:8px; border-radius:10px; background:rgba(255,255,255,.035); }
-      .battery-stack { display:flex; align-items:flex-end; width:38px; color:var(--battery); }
-      .battery-stack svg { width:16px; height:28px; margin-right:-8px; fill:#0d1117; stroke:currentColor; stroke-width:2.6; }
+      .node-offgrid-inverter,.node-grid-inverter { background:transparent; }
+      .battery-stack { display:flex; align-items:flex-end; width:31px; color:var(--battery); }
+      .battery-stack svg { width:25px; height:31px; fill:#0d1117; stroke:currentColor; stroke-width:2.6; }
       .node-grid{left:12%;top:50%;color:var(--grid)} .node-power-box{left:28%;top:50%;color:var(--grid)}
       .node-grid-solar{left:23%;top:15%;color:var(--solar)} .node-grid-inverter{left:23%;top:34%;color:var(--load)}
       .node-offgrid-solar{left:57%;top:15%;color:var(--solar)} .node-offgrid-inverter{left:57%;top:50%;color:var(--load)}
       .node-house{left:88%;top:50%;color:var(--load)} .node-shed{left:88%;top:30%;color:#5ddfc6}
       .node-battery-bank{left:57%;top:73%;color:var(--battery)}
-      .battery-row { position:absolute; z-index:3; left:4%; right:4%; bottom:4px; display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:5px; }
-      .pack-node { min-width:0; min-height:60px; display:grid; grid-template-columns:25px minmax(0,1fr); align-items:center; gap:4px; padding:5px 4px; color:var(--battery); border:1px solid rgba(114,230,162,.18); border-radius:8px; background:rgba(114,230,162,.035); text-align:left; cursor:pointer; }
-      .pack-icon svg { width:24px; height:32px; fill:#0d1117; stroke:currentColor; stroke-width:2.5; }
+      .battery-row { position:absolute; z-index:3; left:10%; right:10%; bottom:5px; display:grid; grid-template-columns:repeat(var(--battery-count),minmax(0,1fr)); }
+      .pack-node { width:72px; min-width:0; min-height:43px; justify-self:center; display:grid; grid-template-columns:20px minmax(0,1fr); align-items:center; gap:3px; padding:2px; color:var(--battery); border:0; border-radius:7px; background:transparent; text-align:left; cursor:pointer; }
+      .pack-icon svg { width:19px; height:27px; fill:#0d1117; stroke:currentColor; stroke-width:2.5; }
       .pack-node b,.pack-node strong,.pack-node small { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-      .pack-node b { color:#aebbd0; font-size:8px; font-weight:500; }.pack-node strong{font-size:13px}.pack-node small{color:var(--muted);font-size:8px}
+      .pack-node b { color:#8fa0b5; font-size:8px; font-weight:500; }.pack-node strong{font-size:12px}.pack-node small{display:none}
       .details-toggle { width:calc(100% - 28px); display:flex; align-items:center; justify-content:space-between; margin:7px 14px 13px; padding:11px 13px; color:var(--ink); border:1px solid rgba(255,255,255,.075); border-radius:10px; background:rgba(255,255,255,.025); text-align:left; cursor:pointer; }
       .details-toggle b,.details-toggle small { display:block; }.details-toggle b{font-size:11px}.details-toggle small{margin-top:3px;color:var(--muted);font-size:9px}.details-toggle.open .chevron{transform:rotate(180deg)}
       .details { display:none; padding:3px 18px 10px; }.details.open{display:block;animation:reveal .25s ease-out}
@@ -546,13 +533,13 @@ class HomePowerFlowCard extends HTMLElement {
       .cells-head { display:flex;justify-content:space-between;margin:13px 2px 7px;font-size:10px}.cells-head span{color:var(--muted)}.cells-head .warn{color:#ff8a75}
       .cell-grid { display:grid;grid-template-columns:repeat(4,1fr);gap:4px}.cell{padding:6px 3px;border:1px solid rgba(114,230,162,.12);border-radius:7px;color:inherit;background:rgba(114,230,162,.035);cursor:pointer}.cell span{display:block;color:#6e8298;font-size:8px}.cell b{display:block;margin-top:2px;font-size:9px}.cell.unavailable{opacity:.4}
       .updated { padding:0 24px 17px; color:#596a80; font-size:9px; text-align:right; }
-      @keyframes flow{to{stroke-dashoffset:-28}} @keyframes pulse{50%{opacity:.4}} @keyframes reveal{from{opacity:0;transform:translateY(-4px)}}
+      @keyframes flow{from{stroke-dashoffset:0}to{stroke-dashoffset:-20}} @keyframes pulse{50%{opacity:.4}} @keyframes reveal{from{opacity:0;transform:translateY(-4px)}}
       @media(max-width:700px){
-        .card-head{padding:13px 14px 4px}.overview{grid-template-columns:repeat(2,1fr);padding:0 14px 12px}.diagram{height:480px}
-        .node{width:112px;grid-template-columns:30px 1fr;gap:4px}.node-icon{width:30px}.node-icon svg{width:29px}.node-copy strong{min-width:60px;font-size:11px}.node-copy b{font-size:8px}.node-sub{left:38px}
+        .card-head{padding:11px 14px 1px}.overview{grid-template-columns:repeat(2,1fr);padding:0 14px 12px}.diagram{height:450px}
+        .node{width:106px;grid-template-columns:28px 1fr;gap:3px}.node-icon{width:28px}.node-icon svg{width:27px}.node-copy strong{min-width:58px;font-size:11px}.node-copy b{font-size:8px}
         .panel-grid,.batteries-grid{grid-template-columns:1fr}
       }
-      @media(max-width:390px){.metric strong{font-size:12px}.diagram{height:465px}.node{width:102px}.node-grid{left:13%}.node-power-box{left:29%}.node-house,.node-shed{left:87%}.battery-row{left:2%;right:2%;gap:3px}.pack-node{grid-template-columns:1fr;text-align:center}.pack-icon{display:none}.pack-node b{font-size:7px}}
+      @media(max-width:390px){.metric strong{font-size:12px}.diagram{height:440px}.node{width:96px}.node-grid{left:13%}.node-power-box{left:29%}.node-house,.node-shed{left:87%}.battery-row{left:8%;right:8%}.pack-node{width:64px;grid-template-columns:18px 1fr}.pack-icon svg{width:17px}.pack-node b{font-size:7px}}
     `;
   }
 }
