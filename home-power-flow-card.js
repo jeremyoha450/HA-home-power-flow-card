@@ -1,4 +1,4 @@
-const CARD_VERSION = "0.6.2";
+const CARD_VERSION = "0.6.3";
 
 const DEFAULT_CONFIG = {
   title: "Home Energy System",
@@ -282,7 +282,7 @@ class HomePowerFlowCard extends HTMLElement {
           <div class="diagram" aria-label="Home power flow diagram">
             ${this._flowSvg()}
             ${gridArrays.slice(0, 2).map((array, i) => `<button class="node pv-node node-grid-pv-${i + 1}" type="button" data-open-panel="grid-array-${i}">${this._nodeHead(ICONS.panel, `PV${i + 1}`, `grid-pv-${i}`)}</button>`).join("")}
-            <button class="total-node node-grid-solar" type="button" data-open-panel="grid-array-0"><strong data-value="grid-solar-total">—</strong></button>
+            <div class="total-node node-grid-solar"><strong data-value="grid-solar-total">—</strong></div>
             <button class="node node-offgrid-inverter" type="button" data-open-panel="offgrid-inverter-panel">
               ${this._nodeHead(ICONS.inverter, "Off-grid", "offgrid-output")}
             </button>
@@ -291,16 +291,16 @@ class HomePowerFlowCard extends HTMLElement {
               ${this._nodeHead(ICONS.inverter, "Grid-tie", "grid-output")}
             </button>
             ${offgridArrays.slice(0, 2).map((array, i) => `<button class="node pv-node node-offgrid-pv-${i + 1}" type="button" data-open-panel="offgrid-array-${i}">${this._nodeHead(ICONS.panel, `PV${i + 1}`, `offgrid-pv-${i}`)}</button>`).join("")}
-            <button class="total-node node-offgrid-solar" type="button" data-open-panel="offgrid-array-0"><strong data-value="offgrid-solar-total">—</strong></button>
-            <button class="node node-power-box" type="button" data-open-panel="power-box-panel">
+            <div class="total-node node-offgrid-solar"><strong data-value="offgrid-solar-total">—</strong></div>
+            <div class="node node-static node-power-box">
               ${this._nodeHead(ICONS.powerbox, "Power box", "power-box-power", "To inverter")}
-            </button>
-            <button class="node node-house" type="button" data-open-panel="loads-panel">
+            </div>
+            <div class="node node-static node-house">
               ${this._nodeHead(ICONS.house, "House", "house-node-power")}
-            </button>
-            <button class="node node-shed" type="button" data-open-panel="loads-panel">
+            </div>
+            <div class="node node-static node-shed">
               ${this._nodeHead(ICONS.house, "Shed", "shed-node-power")}
-            </button>
+            </div>
             <button class="node node-grid" type="button" data-open-panel="grid-panel">
               ${this._nodeHead(ICONS.grid, "Grid", "grid-node-power")}
             </button>
@@ -731,13 +731,14 @@ class HomePowerFlowCard extends HTMLElement {
       .flow.reverse { animation-direction:reverse; }
       .solar-flow { stroke:var(--solar); color:var(--solar); } .load-flow{stroke:var(--load);color:var(--load)} .battery-flow{stroke:var(--battery);color:var(--battery)} .grid-flow{stroke:var(--grid);color:var(--grid)}
       .node { position:absolute; z-index:2; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px; width:78px; min-height:76px; padding:3px; color:var(--load); border:0; border-radius:7px; background:transparent; text-align:center; cursor:pointer; transform:translate(-50%,-50%); }
+      .node-static { cursor:default; }
       .node:hover,.pack-node:hover { background:#151c25; }
       .node-icon { width:31px; height:31px; display:grid; place-items:center; }
       .node-icon svg,.equipment-icon svg { width:29px; height:29px; fill:none; stroke:currentColor; stroke-width:2.4; stroke-linecap:round; stroke-linejoin:round; }
       .node-copy { width:100%; min-width:0; text-align:center; } .node-copy b { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:#98a8bd; font-size:8px; font-weight:500; }
       .node-copy small { display:block; color:#7f91a8; font-size:7px; line-height:8px; white-space:nowrap; }
       .node-copy strong { display:inline-block; min-width:62px; margin-top:2px; padding:3px 5px; border:1px solid currentColor; border-radius:5px; color:currentColor; font-size:12px; text-align:center; white-space:nowrap; background:#0d1117; }
-      .total-node { position:absolute; z-index:2; width:76px; min-height:34px; padding:2px; color:var(--solar); border:0; background:#0d1117; cursor:pointer; transform:translate(-50%,-50%); }
+      .total-node { position:absolute; z-index:2; width:76px; min-height:34px; padding:2px; color:var(--solar); border:0; background:#0d1117; cursor:default; transform:translate(-50%,-50%); }
       .total-node strong { display:inline-block; min-width:70px; padding:4px 6px; border:1px solid currentColor; border-radius:6px; background:#0d1117; font-size:14px; white-space:nowrap; }
       .node-sub { position:absolute; left:45px; bottom:-1px; color:var(--muted); font-size:8px; white-space:nowrap; }
       .node-offgrid-inverter,.node-grid-inverter { background:transparent; }
