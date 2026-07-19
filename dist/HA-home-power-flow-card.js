@@ -1,4 +1,4 @@
-const CARD_VERSION = "0.4.7";
+const CARD_VERSION = "0.4.8";
 
 const DEFAULT_CONFIG = {
   title: "Home Energy System",
@@ -330,7 +330,7 @@ class HomePowerFlowCard extends HTMLElement {
       ? this._number(this.config.power_box?.grid_export_power || this.config.grid_tie.grid_export_power)
       : Math.max(-legacyGridPower, 0);
     const gridPower = gridImport - gridExport;
-    const offgridGridPower = this._number(this.config.offgrid.grid_input_power || this.config.power_box?.offgrid_power);
+    const offgridGridPower = this._number(this.config.power_box?.offgrid_power || this.config.offgrid.grid_input_power);
     const offgridOutput = this._number(this.config.offgrid.output_power);
     const gridOutput = this._number(this.config.grid_tie.output_power);
     const offgridOutputVoltage = this._number(this.config.offgrid.output_voltage);
@@ -356,7 +356,7 @@ class HomePowerFlowCard extends HTMLElement {
       "battery-current": `${Math.abs(bankCurrent).toFixed(1)} A`,
       "battery-status": batteryStatus,
       "battery-direction": batteryPower >= 0 ? `${this._formatPower(Math.abs(batteryPower))} charging` : `${this._formatPower(Math.abs(batteryPower))} supplying`,
-      "power-box-power": this._formatPower(Math.abs(gridPower)),
+      "power-box-power": this._formatPower(Math.abs(offgridGridPower)),
       "power-box-direction": gridImport > 0 ? "Importing from grid" : gridExport > 0 ? "Exporting to grid" : "Grid idle",
       "house-node-power": this._formatPower(housePower),
       "shed-node-power": this._formatPower(shedPower),
@@ -404,7 +404,7 @@ class HomePowerFlowCard extends HTMLElement {
     this._summary("grid-inverter-panel", `${this._power(this.config.grid_tie.output_power)} output`);
     if (this.config.battery_bank) this._summary("battery-bank-panel", this._value(this.config.battery_bank.soc, "%", 0));
     this._summary("loads-panel", this._formatPower(housePower));
-    if (this.config.power_box) this._summary("power-box-panel", gridImport > 0 ? `${this._formatPower(gridImport)} import` : `${this._formatPower(gridExport)} export`);
+    if (this.config.power_box) this._summary("power-box-panel", `${this._formatPower(Math.abs(offgridGridPower))} to off-grid inverter`);
 
     offgridArrays.slice(0, 2).forEach((array, i) => this._setFlow(`flow-offgrid-pv-${i}`, this._number(array.power), this.config.thresholds.solar));
     gridArrays.slice(0, 2).forEach((array, i) => this._setFlow(`flow-grid-pv-${i}`, this._number(array.power), this.config.thresholds.solar));
@@ -429,6 +429,12 @@ class HomePowerFlowCard extends HTMLElement {
       : `rgb(${Math.round(255 - (141 * gridTieShare))}, ${Math.round(91 + (139 * gridTieShare))}, ${Math.round(91 + (71 * gridTieShare))})`;
     this._setFlowColor("flow-grid", gridColor);
     this._setFlowColor("flow-box-inverter", boxColor);
+    const gridNode = this.shadowRoot.querySelector(".node-grid");
+    if (gridNode) {
+      gridNode.style.color = gridColor;
+      const gridLabel = gridNode.querySelector(".node-copy b");
+      if (gridLabel) gridLabel.style.color = gridColor;
+    }
   }
 
   _formatPower(value) {
