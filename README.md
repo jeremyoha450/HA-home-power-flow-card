@@ -64,6 +64,8 @@ The dashboard card editor covers the complete system configuration with separate
 
 Each editable diagram icon has its own adjacent **Icon size (%)** setting in the visual editor. Grid, Power Box, both inverters, and both optional loads can be resized independently from 50% to 200%; 100% retains the standard size.
 
+Grid, Power Box, Grid-tie inverter, Off-grid inverter, and both solar groups automatically fade to grey when their effective power is zero. Individual PV inputs grey independently, while Grid and Power Box inactivity respects their configured phantom-power cutoffs.
+
 Grid current can use a sensor or be calculated from absolute Grid power divided by voltage. Separate Grid and Power Box phantom-power cutoffs treat readings from zero through their configured wattages as idle, suppressing the displayed power, status, colour, and flow animation; the Grid cutoff also suppresses calculated current. Grid, Power Box, both inverters, and optional loads support editable names and MDI icons.
 
 Existing YAML cards remain supported. `example-card.yaml` is provided as a cleaned, ready-to-use configuration for this system, but normal installation and editing no longer require copying or changing YAML.

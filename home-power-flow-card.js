@@ -1,4 +1,4 @@
-const CARD_VERSION = "0.7.6";
+const CARD_VERSION = "0.7.7";
 
 const DEFAULT_CONFIG = {
   title: "Home Energy System",
@@ -677,6 +677,14 @@ class HomePowerFlowCard extends HTMLElement {
       this._setFlow(`flow-battery-${i}`, packPower, packPower < 0);
     });
     this._setFlow("flow-grid", gridPower, gridPower < 0);
+    gridArrays.forEach((array, i) => this._setPowerInactive(`.node-grid-pv-${i + 1}`, this._number(array.power)));
+    offgridArrays.forEach((array, i) => this._setPowerInactive(`.node-offgrid-pv-${i + 1}`, this._number(array.power)));
+    this._setPowerInactive(".node-grid-solar", gridSolar);
+    this._setPowerInactive(".node-offgrid-solar", offgridSolar);
+    this._setPowerInactive(".node-grid-inverter", gridOutput);
+    this._setPowerInactive(".node-offgrid-inverter", offgridOutput);
+    this._setPowerInactive(".node-power-box", offgridGridPower);
+    this._setPowerInactive(".node-grid", gridPower);
     const gridColor = gridPower > 0
       ? "#ff5b5b"
       : gridPower < 0 ? "#72e6a2" : "#b48cff";
@@ -731,6 +739,12 @@ class HomePowerFlowCard extends HTMLElement {
     if (!element) return;
     element.style.stroke = color;
     element.style.color = color;
+  }
+
+  _setPowerInactive(selector, power) {
+    this.shadowRoot.querySelectorAll(selector).forEach((element) => {
+      element.classList.toggle("power-inactive", power === 0);
+    });
   }
 
   _handleClick(event) {
@@ -802,6 +816,9 @@ class HomePowerFlowCard extends HTMLElement {
       .node { position:absolute; z-index:2; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px; width:78px; min-height:76px; padding:3px; color:var(--load); border:0; border-radius:7px; background:transparent; text-align:center; cursor:pointer; transform:translate(-50%,-50%); }
       .node-static { cursor:default; }
       .node:hover,.pack-node:hover { background:#151c25; }
+      .node,.total-node { transition:opacity .3s,filter .3s,color .3s; }
+      .power-inactive { color:#596574 !important; opacity:.42; filter:grayscale(1); }
+      .power-inactive .node-copy b { color:#596574 !important; }
       .node-icon { width:31px; height:31px; display:grid; place-items:center; }
       .node-icon svg,.equipment-icon svg { width:29px; height:29px; fill:none; stroke:currentColor; stroke-width:2.4; stroke-linecap:round; stroke-linejoin:round; }
       .node-icon ha-icon,.equipment-icon ha-icon { width:29px; height:29px; }
