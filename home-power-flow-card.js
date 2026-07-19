@@ -1,4 +1,4 @@
-const CARD_VERSION = "0.4.4";
+const CARD_VERSION = "0.4.5";
 
 const DEFAULT_CONFIG = {
   title: "Home Energy System",
@@ -291,9 +291,9 @@ class HomePowerFlowCard extends HTMLElement {
     const offgridSolar = this.config.offgrid.solar_power
       ? this._number(this.config.offgrid.solar_power)
       : this._sum(offgridArrays.map((item) => item.power));
-    const gridSolar = this.config.grid_tie.solar_power
-      ? this._number(this.config.grid_tie.solar_power)
-      : this._sum(gridArrays.map((item) => item.power));
+    const gridSolar = gridArrays.length
+      ? this._sum(gridArrays.map((item) => item.power))
+      : this._number(this.config.grid_tie.solar_power);
     const totalSolar = offgridSolar + gridSolar;
     const batteryPower = this.config.battery_total_power
       ? this._number(this.config.battery_total_power)
