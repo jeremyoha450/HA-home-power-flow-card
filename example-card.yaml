@@ -1,6 +1,5 @@
 type: custom:home-power-flow-card
 title: Home Power Flow
-subtitle: ""
 precision: 1
 cell_warning_delta: 0.030
 show_zero_flows: false
