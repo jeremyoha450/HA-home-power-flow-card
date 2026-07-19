@@ -1,4 +1,4 @@
-const CARD_VERSION = "0.4.3";
+const CARD_VERSION = "0.4.4";
 
 const DEFAULT_CONFIG = {
   title: "Home Energy System",
@@ -173,12 +173,12 @@ class HomePowerFlowCard extends HTMLElement {
       return `<path id="flow-battery-${i}" class="flow battery-flow battery-branch" d="M300 500 L${x.toFixed(1)} 500 L${x.toFixed(1)} 555"/>`;
     }).join("");
     return `<svg class="flow-lines" viewBox="0 0 600 620" preserveAspectRatio="none" aria-hidden="true">
-      <path id="flow-grid" class="flow grid-flow" d="M35 75 L35 340 L107 340"/>
+      <path id="flow-grid" class="flow grid-flow" d="M48 75 L48 340 L119 340"/>
       <path id="flow-grid-pv-0" class="flow solar-flow" d="M80 120 L80 150 L120 150 L120 165"/>
       <path id="flow-grid-pv-1" class="flow solar-flow" d="M160 120 L160 150 L120 150"/>
       <path id="flow-grid-solar" class="flow solar-flow" d="M120 191 L120 218"/>
-      <path id="flow-gridtie-box" class="flow solar-flow" d="M120 286 L120 327"/>
-      <path id="flow-box-inverter" class="flow grid-flow" d="M133 340 L220 340 L220 300 L272 300"/>
+      <path id="flow-gridtie-box" class="flow solar-flow" d="M120 286 L120 315 L132 315 L132 327"/>
+      <path id="flow-box-inverter" class="flow grid-flow" d="M145 340 L220 340 L220 300 L272 300"/>
       <path id="flow-offgrid-pv-0" class="flow solar-flow" d="M260 120 L260 150 L300 150 L300 165"/>
       <path id="flow-offgrid-pv-1" class="flow solar-flow" d="M340 120 L340 150 L300 150"/>
       <path id="flow-offgrid-solar" class="flow solar-flow" d="M300 191 L300 267"/>
@@ -409,6 +409,15 @@ class HomePowerFlowCard extends HTMLElement {
       this._setFlow(`flow-battery-${i}`, packPower, this.config.thresholds.battery, packPower < 0);
     });
     this._setFlow("flow-grid", gridPower, this.config.thresholds.grid, gridPower < 0);
+    const gridColor = gridPower > this.config.thresholds.grid
+      ? "#ff5b5b"
+      : gridPower < -this.config.thresholds.grid ? "#72e6a2" : "#b48cff";
+    const gridTieShare = Math.min(1, Math.max(0, gridOutput / Math.max(Math.abs(offgridGridPower), 1)));
+    const boxColor = Math.abs(offgridGridPower) < this.config.thresholds.grid
+      ? "#b48cff"
+      : `rgb(${Math.round(255 - (141 * gridTieShare))}, ${Math.round(91 + (139 * gridTieShare))}, ${Math.round(91 + (71 * gridTieShare))})`;
+    this._setFlowColor("flow-grid", gridColor);
+    this._setFlowColor("flow-box-inverter", boxColor);
   }
 
   _formatPower(value) {
@@ -442,6 +451,13 @@ class HomePowerFlowCard extends HTMLElement {
     line.classList.toggle("active", active);
     line.classList.toggle("reverse", reverse);
     line.style.setProperty("--flow-speed", `${Math.max(0.55, 2.2 - Math.min(Math.abs(power) / 2500, 1.5))}s`);
+  }
+
+  _setFlowColor(id, color) {
+    const element = this.shadowRoot.getElementById(id);
+    if (!element) return;
+    element.style.stroke = color;
+    element.style.color = color;
   }
 
   _handleClick(event) {
@@ -525,7 +541,7 @@ class HomePowerFlowCard extends HTMLElement {
       .battery-stack svg { width:25px; height:31px; fill:#0d1117; stroke:currentColor; stroke-width:2.6; }
       .pv-node { width:64px; min-height:72px; color:var(--solar); }
       .pv-node .node-icon { width:34px; height:30px; }.pv-node .node-icon svg{width:34px;height:28px}.pv-node .node-copy strong{min-width:56px;border:0;padding:1px;font-size:12px;color:var(--solar)}
-      .node-grid{left:6%;top:6%;width:72px;color:var(--grid)} .node-power-box{left:20%;top:58.3%;width:72px;color:var(--grid)}
+      .node-grid{left:8%;top:6%;width:72px;color:var(--grid)} .node-power-box{left:22%;top:58.3%;width:72px;color:var(--grid)}
       .node-grid .node-icon,.node-power-box .node-icon{width:27px;height:27px}.node-grid .node-icon svg,.node-power-box .node-icon svg{width:25px}.node-grid .node-copy strong,.node-power-box .node-copy strong{min-width:55px;font-size:11px}
       .node-grid-pv-1{left:13%;top:18%}.node-grid-pv-2{left:27%;top:18%}.node-grid-solar{left:20%;top:28%}.node-grid-inverter{left:20%;top:40%;color:var(--load)}
       .node-offgrid-pv-1{left:43%;top:18%}.node-offgrid-pv-2{left:57%;top:18%}.node-offgrid-solar{left:50%;top:28%}.node-offgrid-inverter{left:50%;top:49%;color:var(--load)}
@@ -563,7 +579,7 @@ class HomePowerFlowCard extends HTMLElement {
         .pv-node{width:58px}.pv-node .node-copy strong{min-width:52px;font-size:11px}.node-offgrid-inverter{width:96px}.node-offgrid-inverter .node-icon{width:52px;height:56px}.node-offgrid-inverter .node-icon svg{width:50px;height:54px}
         .panel-grid,.batteries-grid{grid-template-columns:1fr}
       }
-      @media(max-width:390px){.metric strong{font-size:12px}.diagram{height:580px}.node{width:66px}.node-grid{left:6%;width:60px}.node-power-box{left:20%;width:62px}.pv-node{width:52px}.node-grid-pv-1{left:12%}.node-grid-pv-2{left:28%}.node-offgrid-pv-1{left:42%}.node-offgrid-pv-2{left:58%}.node-offgrid-inverter{left:50%;width:88px}.node-house,.node-shed{left:88%}.battery-row{left:12%;right:12%}.pack-node{width:52px}.pack-icon svg{width:16px}.pack-node b{font-size:7px}}
+      @media(max-width:390px){.metric strong{font-size:12px}.diagram{height:580px}.node{width:66px}.node-grid{left:8%;width:60px}.node-power-box{left:22%;width:62px}.pv-node{width:52px}.node-grid-pv-1{left:12%}.node-grid-pv-2{left:28%}.node-offgrid-pv-1{left:42%}.node-offgrid-pv-2{left:58%}.node-offgrid-inverter{left:50%;width:88px}.node-house,.node-shed{left:88%}.battery-row{left:12%;right:12%}.pack-node{width:52px}.pack-icon svg{width:16px}.pack-node b{font-size:7px}}
     `;
   }
 }
