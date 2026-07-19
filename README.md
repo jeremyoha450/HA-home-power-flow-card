@@ -60,7 +60,7 @@ The card uses these signs to animate flow direction:
 
 ## Visual editor
 
-The dashboard card editor covers the complete system configuration with separate Grid and Power Box sections, plus the house and up to two optional named additional loads, both inverters, up to four PV inputs per inverter, combined battery bank, three battery packs, all 48 optional cell-voltage sensors, and display options.
+The dashboard card editor covers the complete system configuration with separate Grid and Power Box sections, plus the house and up to two optional named additional loads, both inverters, up to four PV inputs per inverter, combined battery bank, up to six battery packs, all 96 optional cell-voltage sensors, and display options.
 
 Each editable diagram icon has its own adjacent **Icon size (%)** setting in the visual editor. Grid, Power Box, both inverters, and both optional loads can be resized independently from 50% to 200%; 100% retains the standard size.
 
@@ -72,7 +72,7 @@ Grid current can use a sensor or be calculated from absolute Grid power divided 
 
 Existing YAML cards remain supported. `example-card.yaml` is provided as a cleaned, ready-to-use configuration for this system, but normal installation and editing no longer require copying or changing YAML.
 
-The compact schematic combines both existing Sunsynk views: grid and grid-tie generation meet at the power box, the power box connects to the off-grid inverter, and the off-grid inverter connects to the house, up to two optional named additional loads, up to four solar inputs on each inverter, and three individually visible battery packs. PV inputs automatically switch to a compact two-row layout when a third or fourth array is configured. Each optional load has its own power sensor and MDI icon setting. Leave either Additional name blank in the visual editor to hide that node; the House and remaining branches automatically reposition for zero, one, or two additional loads. Each battery pack has its own power-flow line.
+The compact schematic combines both existing Sunsynk views: grid and grid-tie generation meet at the power box, the power box connects to the off-grid inverter, and the off-grid inverter connects to the house, up to two optional named additional loads, up to four solar inputs on each inverter, and up to six individually visible battery packs. PV inputs automatically switch to a compact two-row layout when a third or fourth array is configured. Battery packs remain in one row and automatically use a more compact node layout when four to six are configured. Packs 1–6 remain hidden until they contain a name or sensor. Each optional load has its own power sensor and MDI icon setting. Leave either Additional name blank in the visual editor to hide that node; the House and remaining branches automatically reposition for zero, one, or two additional loads. Each battery pack has its own aligned power-flow line.
 
 ## Current entity mapping
 
