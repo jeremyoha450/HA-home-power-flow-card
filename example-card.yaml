@@ -24,10 +24,9 @@ house:
 
 power_box:
   name: Main Power Box
-  # Assumed to be a signed live-power sensor: positive import, negative export.
-  # Change this to sensor.powerbox_grid_power if that is your signed live reading.
-  power: sensor.grid_power_watts
-  secondary_power: sensor.powerbox_grid_power
+  # Signed live power: positive import, negative export.
+  power: sensor.powerbox_grid_power
+  secondary_power: sensor.grid_power_watts
   voltage: sensor.powerbox_grid_voltage
   offgrid_power: sensor.to_shed_power
   solar_power: sensor.powerbox_solar_power
@@ -69,7 +68,7 @@ grid_tie:
   output_current: sensor.inverter_on_grid_l1_current
   frequency: sensor.inverter_on_grid_l1_frequency
   solar_power: sensor.powerbox_solar_power
-  grid_power: sensor.grid_power_watts
+  grid_power: sensor.powerbox_grid_power
   arrays:
     - name: Grid-tie PV 1
       power: sensor.inverter_pv1_power

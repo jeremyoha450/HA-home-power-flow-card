@@ -1,4 +1,4 @@
-const CARD_VERSION = "0.4.6";
+const CARD_VERSION = "0.4.7";
 
 const DEFAULT_CONFIG = {
   title: "Home Energy System",
@@ -307,7 +307,18 @@ class HomePowerFlowCard extends HTMLElement {
     const bankCurrent = this._number(this.config.battery_bank?.current);
     const housePower = this._number(this.config.house.power);
     const shedPower = this._number(this.config.house.shed_powerpoints);
-    const legacyGridPower = this._number(this.config.grid_tie.grid_power);
+    const signedGridReadings = [
+      this.config.power_box?.power,
+      this.config.power_box?.secondary_power,
+      this.config.grid_tie.grid_power,
+    ].filter(Boolean).map((entity) => ({ entity, state: this._state(entity) }))
+      .filter((item) => item.state && Number.isFinite(Number.parseFloat(item.state.state)))
+      .map((item) => ({ entity: item.entity, value: Number.parseFloat(item.state.state) }));
+    const primaryGridReading = signedGridReadings[0]?.value ?? 0;
+    const nonZeroAlternate = signedGridReadings.slice(1).find((item) => item.value !== 0);
+    const legacyGridPower = primaryGridReading === 0 && nonZeroAlternate
+      ? nonZeroAlternate.value
+      : primaryGridReading;
     const hasSeparateGridSensors = Boolean(
       this.config.grid_tie.grid_import_power || this.config.power_box?.grid_import_power ||
       this.config.grid_tie.grid_export_power || this.config.power_box?.grid_export_power

@@ -68,7 +68,7 @@ The compact schematic combines both existing Sunsynk views: grid and grid-tie ge
 - `sensor.mppsolar_inverter_pv1_charging_powe` was supplied without the final `r`. Keep it if that is the real Home Assistant entity ID; otherwise change it to `sensor.mppsolar_inverter_pv1_charging_power`.
 - The individual 16 cell-voltage entity IDs for each battery pack were not supplied. Average, minimum, and maximum cell voltage are already displayed. Add each pack's `cells:` list when those 48 IDs are known.
 
-The example assumes `sensor.grid_power_watts` is signed live power: positive for import and negative for export. If `sensor.powerbox_grid_power` is the signed sensor instead, change both `power_box.power` and `grid_tie.grid_power` to that entity.
+The example uses `sensor.powerbox_grid_power` as signed live power: positive for import and negative for export. `sensor.grid_power_watts` remains configured as the alternate reading.
 
 If your sensors use the opposite convention, create a Home Assistant template sensor that multiplies the value by `-1`.
 
