@@ -1,4 +1,4 @@
-const CARD_VERSION = "0.4.5";
+const CARD_VERSION = "0.4.6";
 
 const DEFAULT_CONFIG = {
   title: "Home Energy System",
@@ -173,7 +173,7 @@ class HomePowerFlowCard extends HTMLElement {
       return `<path id="flow-battery-${i}" class="flow battery-flow battery-branch" d="M300 500 L${x.toFixed(1)} 500 L${x.toFixed(1)} 555"/>`;
     }).join("");
     return `<svg class="flow-lines" viewBox="0 0 600 620" preserveAspectRatio="none" aria-hidden="true">
-      <path id="flow-grid" class="flow grid-flow" d="M48 75 L48 340 L119 340"/>
+      <path id="flow-grid" class="flow grid-flow" d="M48 75 L48 90 L20 90 L20 340 L119 340"/>
       <path id="flow-grid-pv-0" class="flow solar-flow" d="M80 120 L80 150 L120 150 L120 165"/>
       <path id="flow-grid-pv-1" class="flow solar-flow" d="M160 120 L160 150 L120 150"/>
       <path id="flow-grid-solar" class="flow solar-flow" d="M120 191 L120 218"/>
