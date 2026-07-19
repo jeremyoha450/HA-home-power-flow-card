@@ -1,15 +1,10 @@
-const CARD_VERSION = "0.7.2";
+const CARD_VERSION = "0.7.3";
 
 const DEFAULT_CONFIG = {
   title: "Home Energy System",
   precision: 1,
   show_zero_flows: false,
   show_overview: false,
-  thresholds: {
-    solar: 20,
-    battery: 20,
-    grid: 20,
-  },
 };
 
 const ICONS = {
@@ -195,14 +190,6 @@ const EDITOR_SECTIONS = [
   batteryEditorSection(0),
   batteryEditorSection(1),
   batteryEditorSection(2),
-  {
-    title: "Flow thresholds",
-    fields: [
-      editorField("Solar minimum (W)", ["thresholds", "solar"], "number"),
-      editorField("Battery minimum (W)", ["thresholds", "battery"], "number"),
-      editorField("Grid minimum (W)", ["thresholds", "grid"], "number"),
-    ],
-  },
 ];
 
 class HomePowerFlowCard extends HTMLElement {
@@ -218,11 +205,7 @@ class HomePowerFlowCard extends HTMLElement {
     if (!config.offgrid || !config.grid_tie || !config.house) {
       throw new Error("Home Power Flow Card needs offgrid, grid_tie, and house configuration sections.");
     }
-    this.config = {
-      ...DEFAULT_CONFIG,
-      ...config,
-      thresholds: { ...DEFAULT_CONFIG.thresholds, ...(config.thresholds || {}) },
-    };
+    this.config = { ...DEFAULT_CONFIG, ...config };
     this._expanded = this._expanded || new Set();
     if (!this.shadowRoot) this.attachShadow({ mode: "open" });
     this._renderShell();
@@ -585,7 +568,7 @@ class HomePowerFlowCard extends HTMLElement {
     const offgridGridPower = Math.abs(rawOffgridGridPower) <= powerBoxPhantomThreshold ? 0 : rawOffgridGridPower;
     const offgridOutput = this._number(this.config.offgrid.output_power);
     const gridOutput = this._number(this.config.grid_tie.output_power);
-    const batteryStatus = Math.abs(batteryPower) < this.config.thresholds.battery
+    const batteryStatus = batteryPower === 0
       ? "Idle"
       : batteryPower > 0 ? "Charging" : "Discharging";
 
@@ -666,25 +649,25 @@ class HomePowerFlowCard extends HTMLElement {
       this._summary("power-box-panel", `${this._formatPower(Math.abs(offgridGridPower))} to off-grid inverter`);
     }
 
-    offgridArrays.forEach((array, i) => this._setFlow(`flow-offgrid-pv-${i}`, this._number(array.power), this.config.thresholds.solar));
-    gridArrays.forEach((array, i) => this._setFlow(`flow-grid-pv-${i}`, this._number(array.power), this.config.thresholds.solar));
-    this._setFlow("flow-offgrid-solar", offgridSolar, this.config.thresholds.solar);
-    this._setFlow("flow-grid-solar", gridSolar, this.config.thresholds.solar);
-    this._setFlow("flow-offgrid-house", offgridOutput, 20);
-    additionalPowers.forEach((power, index) => this._setFlow(`flow-additional-${index}`, power, 20));
-    this._setFlow("flow-gridtie-box", gridOutput, 20);
-    this._setFlow("flow-box-inverter", offgridGridPower, this.config.thresholds.grid, false);
-    this._setFlow("flow-battery", batteryPower, this.config.thresholds.battery, batteryPower < 0);
+    offgridArrays.forEach((array, i) => this._setFlow(`flow-offgrid-pv-${i}`, this._number(array.power)));
+    gridArrays.forEach((array, i) => this._setFlow(`flow-grid-pv-${i}`, this._number(array.power)));
+    this._setFlow("flow-offgrid-solar", offgridSolar);
+    this._setFlow("flow-grid-solar", gridSolar);
+    this._setFlow("flow-offgrid-house", offgridOutput);
+    additionalPowers.forEach((power, index) => this._setFlow(`flow-additional-${index}`, power));
+    this._setFlow("flow-gridtie-box", gridOutput);
+    this._setFlow("flow-box-inverter", offgridGridPower);
+    this._setFlow("flow-battery", batteryPower, batteryPower < 0);
     batteries.forEach((battery, i) => {
       const packPower = this._number(battery.power);
-      this._setFlow(`flow-battery-${i}`, packPower, this.config.thresholds.battery, packPower < 0);
+      this._setFlow(`flow-battery-${i}`, packPower, packPower < 0);
     });
-    this._setFlow("flow-grid", gridPower, this.config.thresholds.grid, gridPower < 0);
-    const gridColor = gridPower > this.config.thresholds.grid
+    this._setFlow("flow-grid", gridPower, gridPower < 0);
+    const gridColor = gridPower > 0
       ? "#ff5b5b"
-      : gridPower < -this.config.thresholds.grid ? "#72e6a2" : "#b48cff";
+      : gridPower < 0 ? "#72e6a2" : "#b48cff";
     const gridTieShare = Math.min(1, Math.max(0, gridOutput / Math.max(Math.abs(offgridGridPower), 1)));
-    const boxColor = Math.abs(offgridGridPower) < this.config.thresholds.grid
+    const boxColor = offgridGridPower === 0
       ? "#b48cff"
       : `rgb(${Math.round(255 - (141 * gridTieShare))}, ${Math.round(91 + (139 * gridTieShare))}, ${Math.round(91 + (71 * gridTieShare))})`;
     this._setFlowColor("flow-grid", gridColor);
@@ -720,10 +703,10 @@ class HomePowerFlowCard extends HTMLElement {
     });
   }
 
-  _setFlow(id, power, threshold, reverse = false) {
+  _setFlow(id, power, reverse = false) {
     const line = this.shadowRoot.getElementById(id);
     if (!line) return;
-    const active = Math.abs(power) >= threshold || this.config.show_zero_flows;
+    const active = power !== 0 || this.config.show_zero_flows;
     line.classList.toggle("active", active);
     line.classList.toggle("reverse", reverse);
     line.style.setProperty("--flow-speed", `${Math.max(0.55, 2.2 - Math.min(Math.abs(power) / 2500, 1.5))}s`);
