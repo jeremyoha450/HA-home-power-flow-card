@@ -1,4 +1,4 @@
-const CARD_VERSION = "0.5.0";
+const CARD_VERSION = "0.5.1";
 
 const DEFAULT_CONFIG = {
   title: "Home Energy System",
@@ -516,7 +516,7 @@ class HomePowerFlowCard extends HTMLElement {
     const values = {
       "total-solar": this._formatPower(totalSolar),
       "house-power": this._formatPower(housePower),
-      "battery-power": this._formatSignedPower(batteryPower, batteryPower >= 0 ? "charging" : "discharging"),
+      "battery-power": `${this._formatPower(Math.abs(batteryPower))} ${batteryStatus.toLowerCase()}`,
       "grid-power": gridImport > 0 ? `${this._formatPower(gridImport)} import` : `${this._formatPower(gridExport)} export`,
       "offgrid-solar-total": this._formatPower(offgridSolar),
       "grid-solar-total": this._formatPower(gridSolar),
@@ -528,7 +528,7 @@ class HomePowerFlowCard extends HTMLElement {
       "battery-soc": `${bankSoc.toFixed(0)}% SOC`,
       "battery-current": `${Math.abs(bankCurrent).toFixed(1)} A`,
       "battery-status": batteryStatus,
-      "battery-direction": batteryPower >= 0 ? `${this._formatPower(Math.abs(batteryPower))} charging` : `${this._formatPower(Math.abs(batteryPower))} supplying`,
+      "battery-direction": `${this._formatPower(Math.abs(batteryPower))} ${batteryStatus.toLowerCase()}`,
       "power-box-power": this._formatPower(Math.abs(offgridGridPower)),
       "power-box-direction": gridImport > 0 ? "Importing from grid" : gridExport > 0 ? "Exporting to grid" : "Grid idle",
       "house-node-power": this._formatPower(housePower),
@@ -561,8 +561,8 @@ class HomePowerFlowCard extends HTMLElement {
     });
 
     this.shadowRoot.querySelectorAll("[data-entity-value]").forEach((element) => {
-      element.textContent = this._value(element.dataset.entity, element.dataset.unit, Number(element.dataset.precision));
-      element.closest("button")?.classList.toggle("unavailable", !this._state(element.dataset.entity));
+      element.textContent = this._value(element.dataset.entityValue, element.dataset.unit, Number(element.dataset.precision));
+      element.closest("button")?.classList.toggle("unavailable", !this._state(element.dataset.entityValue));
     });
 
     offgridArrays.forEach((array, i) => this._summary(`offgrid-array-${i}`, this._power(array.power)));
@@ -613,10 +613,6 @@ class HomePowerFlowCard extends HTMLElement {
   _formatPower(value) {
     const abs = Math.abs(value);
     return abs >= 1000 ? `${(value / 1000).toFixed(2)} kW` : `${value.toFixed(0)} W`;
-  }
-
-  _formatSignedPower(value, direction) {
-    return `${this._formatPower(Math.abs(value))} ${direction}`;
   }
 
   _summary(id, text) {
