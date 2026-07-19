@@ -1,4 +1,4 @@
-const CARD_VERSION = "0.3.2";
+const CARD_VERSION = "0.3.3";
 
 const DEFAULT_CONFIG = {
   title: "Home Energy System",
@@ -168,18 +168,18 @@ class HomePowerFlowCard extends HTMLElement {
   _flowSvg() {
     const count = Math.max(1, (this.config.batteries || []).length);
     const packBranches = Array.from({ length: count }, (_, i) => {
-      const x = count === 1 ? 250 : 100 + (300 * i / (count - 1));
-      return `<path id="flow-battery-${i}" class="flow battery-flow battery-branch" d="M305 385 L${x.toFixed(1)} 385 L${x.toFixed(1)} 423"/>`;
+      const x = 50 + ((i + 0.5) * 400 / count);
+      return `<path id="flow-battery-${i}" class="flow battery-flow battery-branch" d="M250 385 L${x.toFixed(1)} 385 L${x.toFixed(1)} 423"/>`;
     }).join("");
     return `<svg class="flow-lines" viewBox="0 0 500 480" preserveAspectRatio="none" aria-hidden="true">
-      <path id="flow-grid" class="flow grid-flow" d="M50 240 L170 240"/>
-      <path id="flow-grid-solar" class="flow solar-flow" d="M120 75 L120 135"/>
-      <path id="flow-gridtie-box" class="flow solar-flow" d="M120 190 L120 215 L170 215 L170 240"/>
-      <path id="flow-box-inverter" class="flow grid-flow" d="M170 240 L260 240"/>
-      <path id="flow-offgrid-solar" class="flow solar-flow" d="M305 75 L305 205"/>
-      <path id="flow-offgrid-house" class="flow load-flow" d="M350 240 L410 240"/>
-      <path id="flow-shed" class="flow load-flow" d="M375 240 L375 145 L410 145"/>
-      <path id="flow-battery" class="flow battery-flow" d="M305 275 L305 345"/>
+      <path id="flow-grid" class="flow grid-flow" d="M40 240 L125 240"/>
+      <path id="flow-grid-solar" class="flow solar-flow" d="M125 65 L125 115"/>
+      <path id="flow-gridtie-box" class="flow solar-flow" d="M125 180 L125 215"/>
+      <path id="flow-box-inverter" class="flow grid-flow" d="M125 240 L250 240"/>
+      <path id="flow-offgrid-solar" class="flow solar-flow" d="M250 65 L250 205"/>
+      <path id="flow-offgrid-house" class="flow load-flow" d="M250 240 L420 240"/>
+      <path id="flow-shed" class="flow load-flow" d="M350 240 L350 145 L420 145"/>
+      <path id="flow-battery" class="flow battery-flow" d="M250 275 L250 345"/>
       ${packBranches}
     </svg>`;
   }
@@ -489,12 +489,12 @@ class HomePowerFlowCard extends HTMLElement {
       .node-offgrid-inverter,.node-grid-inverter { background:transparent; }
       .battery-stack { display:flex; align-items:flex-end; width:31px; color:var(--battery); }
       .battery-stack svg { width:25px; height:31px; fill:#0d1117; stroke:currentColor; stroke-width:2.6; }
-      .node-grid{left:10%;top:50%;width:72px;color:var(--grid)} .node-power-box{left:34%;top:50%;width:72px;color:var(--grid)}
+      .node-grid{left:8%;top:50%;width:72px;color:var(--grid)} .node-power-box{left:25%;top:50%;width:72px;color:var(--grid)}
       .node-grid .node-icon,.node-power-box .node-icon{width:27px;height:27px}.node-grid .node-icon svg,.node-power-box .node-icon svg{width:25px}.node-grid .node-copy strong,.node-power-box .node-copy strong{min-width:55px;font-size:11px}
-      .node-grid-solar{left:24%;top:15%;color:var(--solar)} .node-grid-inverter{left:24%;top:34%;color:var(--load)}
-      .node-offgrid-solar{left:61%;top:15%;color:var(--solar)} .node-offgrid-inverter{left:61%;top:50%;color:var(--load)}
-      .node-house{left:88%;top:50%;color:var(--load)} .node-shed{left:88%;top:30%;color:#5ddfc6}
-      .node-battery-bank{left:61%;top:73%;color:var(--battery)}
+      .node-grid-solar{left:25%;top:12%;color:var(--solar)} .node-grid-inverter{left:25%;top:30%;color:var(--load)}
+      .node-offgrid-solar{left:50%;top:12%;color:var(--solar)} .node-offgrid-inverter{left:50%;top:50%;color:var(--load)}
+      .node-house{left:84%;top:50%;color:var(--load)} .node-shed{left:84%;top:30%;color:#5ddfc6}
+      .node-battery-bank{left:50%;top:73%;color:var(--battery)}
       .battery-row { position:absolute; z-index:3; left:10%; right:10%; bottom:5px; display:grid; grid-template-columns:repeat(var(--battery-count),minmax(0,1fr)); }
       .pack-node { width:54px; min-width:0; min-height:55px; justify-self:center; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:0; padding:2px; color:var(--battery); border:0; border-radius:7px; background:#0d1117; text-align:center; cursor:pointer; }
       .pack-icon{height:23px}.pack-icon svg { width:18px; height:23px; fill:#0d1117; stroke:currentColor; stroke-width:2.5; }
@@ -524,7 +524,7 @@ class HomePowerFlowCard extends HTMLElement {
         .node{width:76px}.node-icon{width:28px;height:28px}.node-icon svg{width:27px}.node-copy strong{min-width:58px;font-size:11px}.node-copy b{font-size:8px}
         .panel-grid,.batteries-grid{grid-template-columns:1fr}
       }
-      @media(max-width:390px){.metric strong{font-size:12px}.diagram{height:440px}.node{width:68px}.node-grid{left:10%;width:64px}.node-power-box{left:34%;width:64px}.node-offgrid-inverter,.node-offgrid-solar,.node-battery-bank{left:62%}.node-house,.node-shed{left:88%}.battery-row{left:8%;right:8%}.pack-node{width:48px}.pack-icon svg{width:16px}.pack-node b{font-size:7px}}
+      @media(max-width:390px){.metric strong{font-size:12px}.diagram{height:440px}.node{width:68px}.node-grid{left:8%;width:62px}.node-power-box,.node-grid-inverter,.node-grid-solar{left:25%;width:64px}.node-offgrid-inverter,.node-offgrid-solar,.node-battery-bank{left:50%}.node-house,.node-shed{left:84%}.battery-row{left:10%;right:10%}.pack-node{width:48px}.pack-icon svg{width:16px}.pack-node b{font-size:7px}}
     `;
   }
 }
