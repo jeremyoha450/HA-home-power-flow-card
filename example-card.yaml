@@ -18,9 +18,15 @@ battery_bank:
   discharging_daily: sensor.total_battery_discharging_power_kwh_daily
 
 house:
-  name: House and Shed Loads
+  name: House and Additional Loads
   power: sensor.to_house_power
-  shed_powerpoints: sensor.shed_em_powerpoints_power
+  # Leave either name blank to hide that node and automatically adjust the layout.
+  additional_1_name: Shed
+  additional_1_power: sensor.shed_em_powerpoints_power
+  additional_1_icon: mdi:garage
+  additional_2_name: ""
+  additional_2_power:
+  additional_2_icon: mdi:pool
 
 power_box:
   name: Main Power Box

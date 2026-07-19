@@ -1,4 +1,4 @@
-const CARD_VERSION = "0.6.3";
+const CARD_VERSION = "0.6.4";
 
 const DEFAULT_CONFIG = {
   title: "Home Energy System",
@@ -32,7 +32,7 @@ const EDITOR_STUB_CONFIG = {
   show_overview: false,
   details_open: false,
   power_box: { name: "Power Box" },
-  house: { name: "House and Shed" },
+  house: { name: "House and Additional" },
   grid_tie: {
     name: "Grid-tie Inverter",
     arrays: [{ name: "Grid-tie PV 1" }, { name: "Grid-tie PV 2" }],
@@ -122,11 +122,16 @@ const EDITOR_SECTIONS = [
     ],
   },
   {
-    title: "House and Shed",
+    title: "House and Additional",
     fields: [
       nameField(["house", "name"]),
       editorField("House power", ["house", "power"]),
-      editorField("Shed powerpoints", ["house", "shed_powerpoints"]),
+      editorField("Additional 1 name", ["house", "additional_1_name"], "text", "Leave blank to hide this load"),
+      editorField("Additional 1 power", ["house", "additional_1_power"]),
+      editorField("Additional 1 icon", ["house", "additional_1_icon"], "text", "MDI icon, for example mdi:garage"),
+      editorField("Additional 2 name", ["house", "additional_2_name"], "text", "Leave blank to hide this load"),
+      editorField("Additional 2 power", ["house", "additional_2_power"]),
+      editorField("Additional 2 icon", ["house", "additional_2_icon"], "text", "MDI icon, for example mdi:pool"),
     ],
   },
   {
@@ -264,6 +269,7 @@ class HomePowerFlowCard extends HTMLElement {
     const batteries = this.config.batteries || [];
     const offgridArrays = this.config.offgrid.arrays || [];
     const gridArrays = this.config.grid_tie.arrays || [];
+    const additionalLoads = this._additionalLoads();
     this.shadowRoot.innerHTML = `
       <style>${this._styles()}</style>
       <ha-card>
@@ -279,8 +285,8 @@ class HomePowerFlowCard extends HTMLElement {
         </div>` : ""}
 
         <div class="diagram-wrap">
-          <div class="diagram" aria-label="Home power flow diagram">
-            ${this._flowSvg()}
+          <div class="diagram additional-count-${additionalLoads.length}" aria-label="Home power flow diagram">
+            ${this._flowSvg(additionalLoads.length)}
             ${gridArrays.slice(0, 2).map((array, i) => `<button class="node pv-node node-grid-pv-${i + 1}" type="button" data-open-panel="grid-array-${i}">${this._nodeHead(ICONS.panel, `PV${i + 1}`, `grid-pv-${i}`)}</button>`).join("")}
             <div class="total-node node-grid-solar"><strong data-value="grid-solar-total">—</strong></div>
             <button class="node node-offgrid-inverter" type="button" data-open-panel="offgrid-inverter-panel">
@@ -298,9 +304,9 @@ class HomePowerFlowCard extends HTMLElement {
             <div class="node node-static node-house">
               ${this._nodeHead(ICONS.house, "House", "house-node-power")}
             </div>
-            <div class="node node-static node-shed">
-              ${this._nodeHead(ICONS.house, "Shed", "shed-node-power")}
-            </div>
+            ${additionalLoads.map((load, index) => `<div class="node node-static node-additional node-additional-${index + 1}">
+              ${this._nodeHead(`<ha-icon icon="${this._escape(load.icon)}"></ha-icon>`, load.name, `additional-${index}-node-power`)}
+            </div>`).join("")}
             <button class="node node-grid" type="button" data-open-panel="grid-panel">
               ${this._nodeHead(ICONS.grid, "Grid", "grid-node-power")}
             </button>
@@ -347,7 +353,19 @@ class HomePowerFlowCard extends HTMLElement {
     return `<div class="node-icon">${icon}</div><div class="node-copy"><b>${this._escape(label)}</b>${sublabel ? `<small>${this._escape(sublabel)}</small>` : ""}<strong data-value="${valueKey}">—</strong></div>`;
   }
 
-  _flowSvg() {
+  _additionalLoads(house = this.config.house || {}) {
+    return [1, 2].map((number) => {
+      const legacy = number === 1;
+      const name = String(house[`additional_${number}_name`] || (legacy ? house.additional_name : "") || "").trim();
+      return {
+        name,
+        power: house[`additional_${number}_power`] || (legacy ? house.additional_power || house.shed_powerpoints : ""),
+        icon: house[`additional_${number}_icon`] || (legacy ? house.additional_icon : "") || "mdi:home-outline",
+      };
+    }).filter((load) => load.name);
+  }
+
+  _flowSvg(additionalCount = 0) {
     const count = Math.max(1, (this.config.batteries || []).length);
     const packBranches = Array.from({ length: count }, (_, i) => {
       const x = 72 + ((i + 0.5) * 456 / count);
@@ -363,8 +381,9 @@ class HomePowerFlowCard extends HTMLElement {
       <path id="flow-offgrid-pv-0" class="flow solar-flow" d="M260 120 L260 150 L300 150 L300 165"/>
       <path id="flow-offgrid-pv-1" class="flow solar-flow" d="M340 120 L340 150 L300 150"/>
       <path id="flow-offgrid-solar" class="flow solar-flow" d="M300 191 L300 267"/>
-      <path id="flow-offgrid-house" class="flow load-flow" d="M328 300 L465 300 L465 345 L514 345"/>
-      <path id="flow-shed" class="flow load-flow" d="M465 300 L465 225 L514 225"/>
+      <path id="flow-offgrid-house" class="flow load-flow" d="${additionalCount === 0 ? "M328 300 L514 300" : additionalCount === 1 ? "M328 300 L465 300 L465 345 L514 345" : "M328 300 L465 300 L465 390 L514 390"}"/>
+      ${additionalCount >= 1 ? `<path id="flow-additional-0" class="flow load-flow" d="M465 300 L465 ${additionalCount === 1 ? 225 : 210} L514 ${additionalCount === 1 ? 225 : 210}"/>` : ""}
+      ${additionalCount >= 2 ? '<path id="flow-additional-1" class="flow load-flow" d="M465 300 L514 300"/>' : ""}
       <path id="flow-battery" class="flow battery-flow" d="M300 365 L300 428"/>
       ${packBranches}
     </svg>`;
@@ -443,10 +462,12 @@ class HomePowerFlowCard extends HTMLElement {
   }
 
   _loadsGroup(house) {
+    const additionalLoads = this._additionalLoads(house);
     const fields = [
-      ["Power to house", house.power, "W"], ["Shed powerpoints", house.shed_powerpoints, "W"],
+      ["Power to house", house.power, "W"],
+      ...additionalLoads.map((load) => [`${load.name} power`, load.power, "W"]),
     ];
-    return `<section class="group"><div class="group-label">Loads</div>${this._expandPanel("loads-panel", house.name || "House and shed loads", ICONS.house, fields)}</section>`;
+    return `<section class="group"><div class="group-label">Loads</div>${this._expandPanel("loads-panel", house.name || "House and additional loads", ICONS.house, fields)}</section>`;
   }
 
   _expandPanel(id, name, icon, fields, cells = []) {
@@ -491,7 +512,8 @@ class HomePowerFlowCard extends HTMLElement {
       : averageSoc;
     const bankCurrent = this._number(this.config.battery_bank?.current);
     const housePower = this._number(this.config.house.power);
-    const shedPower = this._number(this.config.house.shed_powerpoints);
+    const additionalLoads = this._additionalLoads();
+    const additionalPowers = additionalLoads.map((load) => this._number(load.power));
     const signedGridState = this._state(this.config.power_box?.power);
     const signedGridValue = Number.parseFloat(signedGridState?.state);
     const gridMeterPower = Number.isFinite(signedGridValue) ? signedGridValue : 0;
@@ -534,7 +556,6 @@ class HomePowerFlowCard extends HTMLElement {
       "power-box-power": this._formatPower(Math.abs(offgridGridPower)),
       "power-box-direction": gridImport > 0 ? "Importing from grid" : gridExport > 0 ? "Exporting to grid" : "Grid idle",
       "house-node-power": this._formatPower(housePower),
-      "shed-node-power": this._formatPower(shedPower),
       "grid-node-power": this._formatPower(Math.abs(gridPower)),
       "grid-direction": gridPower >= 0 ? "Importing" : "Exporting",
       "offgrid-status": this._state(this.config.offgrid.status)?.state || "Online",
@@ -544,6 +565,10 @@ class HomePowerFlowCard extends HTMLElement {
     Object.entries(values).forEach(([key, value]) => {
       const element = this.shadowRoot.querySelector(`[data-value="${key}"]`);
       if (element) element.textContent = value;
+    });
+    additionalPowers.forEach((power, index) => {
+      const element = this.shadowRoot.querySelector(`[data-value="additional-${index}-node-power"]`);
+      if (element) element.textContent = this._formatPower(power);
     });
     gridArrays.slice(0, 2).forEach((array, i) => {
       const element = this.shadowRoot.querySelector(`[data-value="grid-pv-${i}"]`);
@@ -591,7 +616,7 @@ class HomePowerFlowCard extends HTMLElement {
     this._setFlow("flow-offgrid-solar", offgridSolar, this.config.thresholds.solar);
     this._setFlow("flow-grid-solar", gridSolar, this.config.thresholds.solar);
     this._setFlow("flow-offgrid-house", offgridOutput, 20);
-    this._setFlow("flow-shed", shedPower, 20);
+    additionalPowers.forEach((power, index) => this._setFlow(`flow-additional-${index}`, power, 20));
     this._setFlow("flow-gridtie-box", gridOutput, 20);
     this._setFlow("flow-box-inverter", offgridGridPower, this.config.thresholds.grid, false);
     this._setFlow("flow-battery", batteryPower, this.config.thresholds.battery, batteryPower < 0);
@@ -735,6 +760,7 @@ class HomePowerFlowCard extends HTMLElement {
       .node:hover,.pack-node:hover { background:#151c25; }
       .node-icon { width:31px; height:31px; display:grid; place-items:center; }
       .node-icon svg,.equipment-icon svg { width:29px; height:29px; fill:none; stroke:currentColor; stroke-width:2.4; stroke-linecap:round; stroke-linejoin:round; }
+      .node-icon ha-icon { width:29px; height:29px; }
       .node-copy { width:100%; min-width:0; text-align:center; } .node-copy b { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:#98a8bd; font-size:8px; font-weight:500; }
       .node-copy small { display:block; color:#7f91a8; font-size:7px; line-height:8px; white-space:nowrap; }
       .node-copy strong { display:inline-block; min-width:62px; margin-top:2px; padding:3px 5px; border:1px solid currentColor; border-radius:5px; color:currentColor; font-size:12px; text-align:center; white-space:nowrap; background:#0d1117; }
@@ -755,7 +781,10 @@ class HomePowerFlowCard extends HTMLElement {
       .node-grid .node-icon,.node-power-box .node-icon{width:27px;height:27px}.node-grid .node-icon svg,.node-power-box .node-icon svg{width:25px}.node-grid .node-copy strong,.node-power-box .node-copy strong{min-width:55px;font-size:11px}
       .node-grid-pv-1{left:13%;top:18%}.node-grid-pv-2{left:27%;top:18%}.node-grid-solar{left:20%;top:28%}.node-grid-inverter{left:20%;top:40%;color:var(--load)}
       .node-offgrid-pv-1{left:43%;top:18%}.node-offgrid-pv-2{left:57%;top:18%}.node-offgrid-solar{left:50%;top:28%}.node-offgrid-inverter{left:50%;top:49%;color:var(--load)}
-      .node-house{left:88%;top:56%;color:var(--load)} .node-shed{left:88%;top:36%;color:#5ddfc6}
+      .node-house{left:88%;color:var(--load)} .node-additional{left:88%;color:#5ddfc6}
+      .diagram.additional-count-0 .node-house{top:49%}
+      .diagram.additional-count-1 .node-house{top:56%}.diagram.additional-count-1 .node-additional-1{top:36%}
+      .diagram.additional-count-2 .node-house{top:63%}.diagram.additional-count-2 .node-additional-1{top:34%}.diagram.additional-count-2 .node-additional-2{top:49%}
       .output-electrical { position:absolute; z-index:3; left:64%; top:44%; display:flex; flex-direction:column; align-items:flex-start; padding:2px 5px; color:var(--load); background:transparent; font-size:11px; font-weight:700; line-height:1.15; transform:translate(-50%,-50%); white-space:nowrap; }
       .node-battery-bank{left:50%;top:73%;color:var(--battery)}
       .battery-current { position:absolute; z-index:3; left:50%; top:62%; padding:2px 6px; color:var(--battery); background:#0d1117; font-size:12px; font-weight:700; transform:translate(-50%,-50%); }
@@ -801,7 +830,7 @@ class HomePowerFlowCard extends HTMLElement {
         .node-battery-bank{width:100px}.output-electrical{left:60%;top:43%;font-size:9px;transform:translate(0,-50%)}
         .panel-grid,.batteries-grid{grid-template-columns:1fr}
       }
-      @media(max-width:390px){.metric strong{font-size:12px}.diagram{height:580px}.node{width:66px}.node-grid{left:8%;width:60px}.node-power-box{left:22%;width:74px}.node-battery-bank{width:96px}.pv-node{width:52px}.node-grid-pv-1{left:12%}.node-grid-pv-2{left:28%}.node-offgrid-pv-1{left:42%}.node-offgrid-pv-2{left:58%}.node-offgrid-inverter{left:50%;width:88px}.node-house,.node-shed{left:88%}.battery-row{left:12%;right:12%}.pack-node{width:52px}.pack-icon svg{width:16px}.pack-node b{font-size:7px}}
+      @media(max-width:390px){.metric strong{font-size:12px}.diagram{height:580px}.node{width:66px}.node-grid{left:8%;width:60px}.node-power-box{left:22%;width:74px}.node-battery-bank{width:96px}.pv-node{width:52px}.node-grid-pv-1{left:12%}.node-grid-pv-2{left:28%}.node-offgrid-pv-1{left:42%}.node-offgrid-pv-2{left:58%}.node-offgrid-inverter{left:50%;width:88px}.node-house,.node-additional{left:88%}.battery-row{left:12%;right:12%}.pack-node{width:52px}.pack-icon svg{width:16px}.pack-node b{font-size:7px}}
     `;
   }
 }
