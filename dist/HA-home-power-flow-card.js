@@ -1,4 +1,4 @@
-const CARD_VERSION = "0.4.2";
+const CARD_VERSION = "0.4.3";
 
 const DEFAULT_CONFIG = {
   title: "Home Energy System",
@@ -126,7 +126,7 @@ class HomePowerFlowCard extends HTMLElement {
               ${this._nodeHead(ICONS.house, "Shed", "shed-node-power")}
             </button>
             <button class="node node-grid" type="button" data-open-panel="power-box-panel">
-              ${this._nodeHead(ICONS.grid, "Utility grid", "grid-node-power")}
+              ${this._nodeHead(ICONS.grid, "Grid", "grid-node-power")}
             </button>
             <button class="node node-battery-bank" type="button" data-open-panel="battery-bank-panel">
               <div class="battery-state"><span class="battery-stack">${ICONS.battery}</span><span data-value="battery-status">Idle</span></div>
@@ -173,18 +173,18 @@ class HomePowerFlowCard extends HTMLElement {
       return `<path id="flow-battery-${i}" class="flow battery-flow battery-branch" d="M300 500 L${x.toFixed(1)} 500 L${x.toFixed(1)} 555"/>`;
     }).join("");
     return `<svg class="flow-lines" viewBox="0 0 600 620" preserveAspectRatio="none" aria-hidden="true">
-      <path id="flow-grid" class="flow grid-flow" d="M35 100 L35 340 L85 340"/>
+      <path id="flow-grid" class="flow grid-flow" d="M35 75 L35 340 L107 340"/>
       <path id="flow-grid-pv-0" class="flow solar-flow" d="M80 120 L80 150 L120 150 L120 165"/>
       <path id="flow-grid-pv-1" class="flow solar-flow" d="M160 120 L160 150 L120 150"/>
-      <path id="flow-grid-solar" class="flow solar-flow" d="M120 185 L120 225"/>
-      <path id="flow-gridtie-box" class="flow solar-flow" d="M120 275 L120 310"/>
-      <path id="flow-box-inverter" class="flow grid-flow" d="M150 340 L220 340 L220 300 L260 300"/>
+      <path id="flow-grid-solar" class="flow solar-flow" d="M120 191 L120 218"/>
+      <path id="flow-gridtie-box" class="flow solar-flow" d="M120 286 L120 327"/>
+      <path id="flow-box-inverter" class="flow grid-flow" d="M133 340 L220 340 L220 300 L272 300"/>
       <path id="flow-offgrid-pv-0" class="flow solar-flow" d="M260 120 L260 150 L300 150 L300 165"/>
       <path id="flow-offgrid-pv-1" class="flow solar-flow" d="M340 120 L340 150 L300 150"/>
-      <path id="flow-offgrid-solar" class="flow solar-flow" d="M300 185 L300 245"/>
-      <path id="flow-offgrid-house" class="flow load-flow" d="M340 300 L465 300 L465 345 L500 345"/>
-      <path id="flow-shed" class="flow load-flow" d="M465 300 L465 225 L500 225"/>
-      <path id="flow-battery" class="flow battery-flow" d="M300 355 L300 445"/>
+      <path id="flow-offgrid-solar" class="flow solar-flow" d="M300 191 L300 267"/>
+      <path id="flow-offgrid-house" class="flow load-flow" d="M328 300 L465 300 L465 345 L514 345"/>
+      <path id="flow-shed" class="flow load-flow" d="M465 300 L465 225 L514 225"/>
+      <path id="flow-battery" class="flow battery-flow" d="M300 365 L300 428"/>
       ${packBranches}
     </svg>`;
   }
@@ -506,7 +506,7 @@ class HomePowerFlowCard extends HTMLElement {
       .flow.active { opacity:1; stroke-dasharray:2 8; animation:flow var(--flow-speed,1.3s) linear infinite; filter:drop-shadow(0 0 2px currentColor); will-change:stroke-dashoffset; }
       .flow.reverse { animation-direction:reverse; }
       .solar-flow { stroke:var(--solar); color:var(--solar); } .load-flow{stroke:var(--load);color:var(--load)} .battery-flow{stroke:var(--battery);color:var(--battery)} .grid-flow{stroke:var(--grid);color:var(--grid)}
-      .node { position:absolute; z-index:2; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px; width:78px; min-height:76px; padding:3px; color:var(--load); border:0; border-radius:7px; background:#0d1117; text-align:center; cursor:pointer; transform:translate(-50%,-50%); }
+      .node { position:absolute; z-index:2; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px; width:78px; min-height:76px; padding:3px; color:var(--load); border:0; border-radius:7px; background:transparent; text-align:center; cursor:pointer; transform:translate(-50%,-50%); }
       .node:hover,.pack-node:hover { background:#151c25; }
       .node-icon { width:31px; height:31px; display:grid; place-items:center; }
       .node-icon svg,.equipment-icon svg { width:29px; height:29px; fill:none; stroke:currentColor; stroke-width:2.4; stroke-linecap:round; stroke-linejoin:round; }
@@ -515,7 +515,7 @@ class HomePowerFlowCard extends HTMLElement {
       .total-node { position:absolute; z-index:2; width:76px; min-height:34px; padding:2px; color:var(--solar); border:0; background:#0d1117; cursor:pointer; transform:translate(-50%,-50%); }
       .total-node strong { display:inline-block; min-width:70px; padding:4px 6px; border:1px solid currentColor; border-radius:6px; background:#0d1117; font-size:14px; white-space:nowrap; }
       .node-sub { position:absolute; left:45px; bottom:-1px; color:var(--muted); font-size:8px; white-space:nowrap; }
-      .node-offgrid-inverter,.node-grid-inverter { background:#0d1117; }
+      .node-offgrid-inverter,.node-grid-inverter { background:transparent; }
       .node-offgrid-inverter { width:104px; min-height:122px; }
       .node-offgrid-inverter .node-icon { width:58px; height:62px; }
       .node-offgrid-inverter .node-icon svg { width:56px; height:60px; }
@@ -525,16 +525,16 @@ class HomePowerFlowCard extends HTMLElement {
       .battery-stack svg { width:25px; height:31px; fill:#0d1117; stroke:currentColor; stroke-width:2.6; }
       .pv-node { width:64px; min-height:72px; color:var(--solar); }
       .pv-node .node-icon { width:34px; height:30px; }.pv-node .node-icon svg{width:34px;height:28px}.pv-node .node-copy strong{min-width:56px;border:0;padding:1px;font-size:12px;color:var(--solar)}
-      .node-grid{left:6%;top:6%;width:72px;color:var(--grid)} .node-power-box{left:20%;top:55%;width:72px;color:var(--grid)}
+      .node-grid{left:6%;top:6%;width:72px;color:var(--grid)} .node-power-box{left:20%;top:58.3%;width:72px;color:var(--grid)}
       .node-grid .node-icon,.node-power-box .node-icon{width:27px;height:27px}.node-grid .node-icon svg,.node-power-box .node-icon svg{width:25px}.node-grid .node-copy strong,.node-power-box .node-copy strong{min-width:55px;font-size:11px}
       .node-grid-pv-1{left:13%;top:18%}.node-grid-pv-2{left:27%;top:18%}.node-grid-solar{left:20%;top:28%}.node-grid-inverter{left:20%;top:40%;color:var(--load)}
       .node-offgrid-pv-1{left:43%;top:18%}.node-offgrid-pv-2{left:57%;top:18%}.node-offgrid-solar{left:50%;top:28%}.node-offgrid-inverter{left:50%;top:49%;color:var(--load)}
       .node-house{left:88%;top:56%;color:var(--load)} .node-shed{left:88%;top:36%;color:#5ddfc6}
-      .output-electrical { position:absolute; z-index:3; left:64%; top:45.5%; display:flex; flex-direction:column; align-items:flex-start; padding:2px 5px; color:var(--load); background:#0d1117; font-size:11px; font-weight:700; line-height:1.15; transform:translate(-50%,-50%); white-space:nowrap; }
+      .output-electrical { position:absolute; z-index:3; left:64%; top:44%; display:flex; flex-direction:column; align-items:flex-start; padding:2px 5px; color:var(--load); background:transparent; font-size:11px; font-weight:700; line-height:1.15; transform:translate(-50%,-50%); white-space:nowrap; }
       .node-battery-bank{left:50%;top:73%;color:var(--battery)}
       .battery-current { position:absolute; z-index:3; left:50%; top:62%; padding:2px 6px; color:var(--battery); background:#0d1117; font-size:12px; font-weight:700; transform:translate(-50%,-50%); }
       .battery-row { position:absolute; z-index:3; left:12%; right:12%; bottom:5px; display:grid; grid-template-columns:repeat(var(--battery-count),minmax(0,1fr)); }
-      .pack-node { width:62px; min-width:0; min-height:70px; justify-self:center; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:0; padding:2px; color:var(--battery); border:0; border-radius:7px; background:#0d1117; text-align:center; cursor:pointer; }
+      .pack-node { width:62px; min-width:0; min-height:70px; justify-self:center; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:0; padding:2px; color:var(--battery); border:0; border-radius:7px; background:transparent; text-align:center; cursor:pointer; }
       .pack-icon{height:23px}.pack-icon svg { width:18px; height:23px; fill:#0d1117; stroke:currentColor; stroke-width:2.5; }
       .pack-node b,.pack-node strong,.pack-node small { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
       .pack-node b { color:#8fa0b5; font-size:8px; font-weight:500; }.pack-node strong{font-size:13px}.pack-node small{display:block;color:var(--battery);font-size:9px;font-weight:700}
