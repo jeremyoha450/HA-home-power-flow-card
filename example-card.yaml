@@ -26,11 +26,9 @@ power_box:
   name: Main Power Box
   # Positive imports from Grid; negative exports to Grid.
   power: sensor.powerbox_grid_power
-  secondary_power: sensor.grid_power_watts
   # This is the value displayed below Power Box as "To inverter".
   offgrid_power: sensor.to_shed_power
   voltage: sensor.powerbox_grid_voltage
-  solar_power: sensor.powerbox_solar_power
   energy: sensor.powerbox_grid_energy
   daily_import: sensor.grid_power_import_kwh_daily
   daily_export: sensor.grid_power_export_kwh_daily

@@ -1,4 +1,4 @@
-const CARD_VERSION = "0.6.0";
+const CARD_VERSION = "0.6.1";
 
 const DEFAULT_CONFIG = {
   title: "Home Energy System",
@@ -101,20 +101,24 @@ const EDITOR_SECTIONS = [
     ],
   },
   {
-    title: "Grid and Power Box",
+    title: "Grid",
     open: true,
     fields: [
-      nameField(["power_box", "name"]),
       editorField("Signed Grid power", ["power_box", "power"], "entity", "Positive import, negative export"),
-      editorField("Power to off-grid inverter", ["power_box", "offgrid_power"]),
       editorField("Grid voltage", ["power_box", "voltage"]),
       editorField("Grid current", ["power_box", "current"]),
       editorField("Grid frequency", ["power_box", "frequency"]),
-      editorField("Grid-tie solar total (optional)", ["power_box", "solar_power"]),
       editorField("Grid energy", ["power_box", "energy"]),
       editorField("Daily import", ["power_box", "daily_import"]),
       editorField("Daily export", ["power_box", "daily_export"]),
-      editorField("Alternate signed Grid power", ["power_box", "secondary_power"]),
+    ],
+  },
+  {
+    title: "Power Box",
+    open: true,
+    fields: [
+      nameField(["power_box", "name"]),
+      editorField("Power to off-grid inverter", ["power_box", "offgrid_power"]),
     ],
   },
   {
@@ -135,7 +139,6 @@ const EDITOR_SECTIONS = [
       editorField("Frequency", ["grid_tie", "frequency"]),
       editorField("Status", ["grid_tie", "status"]),
       editorField("Solar total fallback", ["grid_tie", "solar_power"]),
-      editorField("Signed Grid fallback", ["grid_tie", "grid_power"]),
     ],
   },
   pvEditorSection("Grid-tie PV 1", ["grid_tie", "arrays", 0]),
@@ -298,7 +301,7 @@ class HomePowerFlowCard extends HTMLElement {
             <button class="node node-shed" type="button" data-open-panel="loads-panel">
               ${this._nodeHead(ICONS.house, "Shed", "shed-node-power")}
             </button>
-            <button class="node node-grid" type="button" data-open-panel="power-box-panel">
+            <button class="node node-grid" type="button" data-open-panel="grid-panel">
               ${this._nodeHead(ICONS.grid, "Grid", "grid-node-power")}
             </button>
             <button class="node node-battery-bank" type="button" data-open-panel="battery-bank-panel">
@@ -326,6 +329,7 @@ class HomePowerFlowCard extends HTMLElement {
           ${this._inverterGroup("offgrid-inverter-panel", this.config.offgrid, "Off-grid inverter")}
           ${this._solarGroup("grid", "Grid-tie solar arrays", this.config.grid_tie.arrays || [], this.config.grid_tie.solar_power)}
           ${this._inverterGroup("grid-inverter-panel", this.config.grid_tie, "Grid-tie inverter")}
+          ${this.config.power_box ? this._gridGroup(this.config.power_box) : ""}
           ${this.config.power_box ? this._powerBoxGroup(this.config.power_box) : ""}
           ${this._loadsGroup(this.config.house)}
         </div>
@@ -419,19 +423,23 @@ class HomePowerFlowCard extends HTMLElement {
     return `<section class="group"><div class="group-label">Inverter</div>${this._expandPanel(id, inverter.name || fallbackName, ICONS.inverter, fields)}</section>`;
   }
 
-  _powerBoxGroup(powerBox) {
+  _gridGroup(powerBox) {
     const hasSeparateGridSensors = powerBox.grid_import_power || powerBox.grid_export_power;
     const fields = [
-      [hasSeparateGridSensors ? "Grid import" : "Grid net power", powerBox.grid_import_power || powerBox.power || this.config.grid_tie.grid_import_power, "W"],
-      ["Grid power (alternate)", powerBox.secondary_power, "W"],
-      ["Grid export", powerBox.grid_export_power || this.config.grid_tie.grid_export_power, "W"],
-      ["To off-grid inverter", powerBox.offgrid_power || this.config.offgrid.grid_input_power, "W"],
-      ["Grid-tie solar", powerBox.solar_power || this.config.grid_tie.solar_power, "W"],
+      [hasSeparateGridSensors ? "Grid import" : "Grid net power", powerBox.grid_import_power || powerBox.power, "W"],
+      ["Grid export", powerBox.grid_export_power, "W"],
       ["Voltage", powerBox.voltage, "V"], ["Current", powerBox.current, "A"],
       ["Frequency", powerBox.frequency, "Hz"], ["Daily import", powerBox.daily_import, "kWh"],
       ["Daily export", powerBox.daily_export, "kWh"], ["Grid energy", powerBox.energy, "kWh"],
     ];
-    return `<section class="group"><div class="group-label">Grid connection</div>${this._expandPanel("power-box-panel", powerBox.name || "Power box", ICONS.powerbox, fields)}</section>`;
+    return `<section class="group"><div class="group-label">Grid connection</div>${this._expandPanel("grid-panel", "Grid", ICONS.grid, fields)}</section>`;
+  }
+
+  _powerBoxGroup(powerBox) {
+    const fields = [
+      ["To off-grid inverter", powerBox.offgrid_power || this.config.offgrid.grid_input_power, "W"],
+    ];
+    return `<section class="group"><div class="group-label">Power distribution</div>${this._expandPanel("power-box-panel", powerBox.name || "Power box", ICONS.powerbox, fields)}</section>`;
   }
 
   _loadsGroup(house) {
@@ -484,28 +492,18 @@ class HomePowerFlowCard extends HTMLElement {
     const bankCurrent = this._number(this.config.battery_bank?.current);
     const housePower = this._number(this.config.house.power);
     const shedPower = this._number(this.config.house.shed_powerpoints);
-    const signedGridReadings = [
-      this.config.power_box?.power,
-      this.config.power_box?.secondary_power,
-      this.config.grid_tie.grid_power,
-    ].filter(Boolean).map((entity) => ({ entity, state: this._state(entity) }))
-      .filter((item) => item.state && Number.isFinite(Number.parseFloat(item.state.state)))
-      .map((item) => ({ entity: item.entity, value: Number.parseFloat(item.state.state) }));
-    const primaryGridReading = signedGridReadings[0]?.value ?? 0;
-    const nonZeroAlternate = signedGridReadings.slice(1).find((item) => item.value !== 0);
-    const legacyGridPower = primaryGridReading === 0 && nonZeroAlternate
-      ? nonZeroAlternate.value
-      : primaryGridReading;
+    const signedGridState = this._state(this.config.power_box?.power);
+    const signedGridValue = Number.parseFloat(signedGridState?.state);
+    const gridMeterPower = Number.isFinite(signedGridValue) ? signedGridValue : 0;
     const hasSeparateGridSensors = Boolean(
-      this.config.grid_tie.grid_import_power || this.config.power_box?.grid_import_power ||
-      this.config.grid_tie.grid_export_power || this.config.power_box?.grid_export_power
+      this.config.power_box?.grid_import_power || this.config.power_box?.grid_export_power
     );
     const gridImport = hasSeparateGridSensors
-      ? this._number(this.config.power_box?.grid_import_power || this.config.grid_tie.grid_import_power)
-      : Math.max(legacyGridPower, 0);
+      ? this._number(this.config.power_box?.grid_import_power)
+      : Math.max(gridMeterPower, 0);
     const gridExport = hasSeparateGridSensors
-      ? this._number(this.config.power_box?.grid_export_power || this.config.grid_tie.grid_export_power)
-      : Math.max(-legacyGridPower, 0);
+      ? this._number(this.config.power_box?.grid_export_power)
+      : Math.max(-gridMeterPower, 0);
     const gridPower = gridImport - gridExport;
     const offgridGridPower = this._number(this.config.power_box?.offgrid_power || this.config.offgrid.grid_input_power);
     const offgridOutput = this._number(this.config.offgrid.output_power);
@@ -581,7 +579,12 @@ class HomePowerFlowCard extends HTMLElement {
     this._summary("grid-inverter-panel", `${this._power(this.config.grid_tie.output_power)} output`);
     if (this.config.battery_bank) this._summary("battery-bank-panel", this._value(this.config.battery_bank.soc, "%", 0));
     this._summary("loads-panel", this._formatPower(housePower));
-    if (this.config.power_box) this._summary("power-box-panel", `${this._formatPower(Math.abs(offgridGridPower))} to off-grid inverter`);
+    if (this.config.power_box) {
+      this._summary("grid-panel", gridImport > 0
+        ? `${this._formatPower(gridImport)} importing`
+        : gridExport > 0 ? `${this._formatPower(gridExport)} exporting` : "Grid idle");
+      this._summary("power-box-panel", `${this._formatPower(Math.abs(offgridGridPower))} to off-grid inverter`);
+    }
 
     offgridArrays.slice(0, 2).forEach((array, i) => this._setFlow(`flow-offgrid-pv-${i}`, this._number(array.power), this.config.thresholds.solar));
     gridArrays.slice(0, 2).forEach((array, i) => this._setFlow(`flow-grid-pv-${i}`, this._number(array.power), this.config.thresholds.solar));

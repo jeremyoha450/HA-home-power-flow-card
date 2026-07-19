@@ -55,15 +55,12 @@ The card uses these signs to animate flow direction:
 
 - `battery_total_power`: positive is charging, negative is discharging.
 - `power_box.power`: signed Grid power; positive is import and negative is export.
-- `power_box.secondary_power`: optional fallback when the primary signed sensor is unavailable or zero.
 - `power_box.grid_import_power` and `power_box.grid_export_power`: optional separate, positive-valued sensors override the signed reading.
 - `power_box.offgrid_power`: power being sent from the Power Box to the off-grid inverter (`offgrid.grid_input_power` remains a fallback).
 
-For systems with only one bidirectional meter, `grid_tie.grid_power` remains supported as a fallback: positive is import and negative is export.
-
 ## Visual editor
 
-The dashboard card editor covers the complete system configuration: Grid and Power Box, house and shed, both inverters, four PV inputs, combined battery bank, three battery packs, all 48 optional cell-voltage sensors, display options, and flow thresholds.
+The dashboard card editor covers the complete system configuration with separate Grid and Power Box sections, plus house and shed, both inverters, four PV inputs, combined battery bank, three battery packs, all 48 optional cell-voltage sensors, display options, and flow thresholds.
 
 Existing YAML cards remain supported. `example-card.yaml` is provided as a cleaned, ready-to-use configuration for this system, but normal installation and editing no longer require copying or changing YAML.
 
@@ -76,7 +73,7 @@ The compact schematic combines both existing Sunsynk views: grid and grid-tie ge
 - `sensor.mppsolar_inverter_pv1_charging_powe` was supplied without the final `r`. Keep it if that is the real Home Assistant entity ID; otherwise change it to `sensor.mppsolar_inverter_pv1_charging_power`.
 - The individual 16 cell-voltage entity IDs for each battery pack were not supplied. Average, minimum, and maximum cell voltage are already displayed. Add each pack's `cells:` list when those 48 IDs are known.
 
-The example uses `sensor.powerbox_grid_power` as signed live power: positive for import and negative for export. `sensor.grid_power_watts` remains configured as the alternate reading.
+The example uses `sensor.powerbox_grid_power` as signed live power: positive for import and negative for export. Power sent from the Power Box to the off-grid inverter is read separately from `sensor.to_shed_power`.
 
 If your sensors use the opposite convention, create a Home Assistant template sensor that multiplies the value by `-1`.
 
