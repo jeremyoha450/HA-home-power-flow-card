@@ -62,7 +62,7 @@ The card uses these signs to animate flow direction:
 
 The dashboard card editor covers the complete system configuration with separate Grid and Power Box sections, plus the house and up to two optional named additional loads, both inverters, up to four PV inputs per inverter, combined battery bank, three battery packs, all 48 optional cell-voltage sensors, display options, and flow thresholds.
 
-Grid current can use a sensor or be calculated from absolute Grid power divided by voltage. The optional phantom-power cutoff treats readings from zero through the configured wattage as idle, suppressing the displayed power, calculated current, status, colour, and flow animation. Grid, Power Box, both inverters, and optional loads support editable names and MDI icons.
+Grid current can use a sensor or be calculated from absolute Grid power divided by voltage. Separate Grid and Power Box phantom-power cutoffs treat readings from zero through their configured wattages as idle, suppressing the displayed power, status, colour, and flow animation; the Grid cutoff also suppresses calculated current. Grid, Power Box, both inverters, and optional loads support editable names and MDI icons.
 
 Existing YAML cards remain supported. `example-card.yaml` is provided as a cleaned, ready-to-use configuration for this system, but normal installation and editing no longer require copying or changing YAML.
 

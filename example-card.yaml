@@ -39,6 +39,7 @@ power_box:
   power: sensor.powerbox_grid_power
   # This is the value displayed below Power Box as "To inverter".
   offgrid_power: sensor.to_shed_power
+  offgrid_phantom_power_threshold: 20
   voltage: sensor.powerbox_grid_voltage
   energy: sensor.powerbox_grid_energy
   daily_import: sensor.grid_power_import_kwh_daily

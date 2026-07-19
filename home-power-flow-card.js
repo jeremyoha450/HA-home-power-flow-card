@@ -1,4 +1,4 @@
-const CARD_VERSION = "0.7.0";
+const CARD_VERSION = "0.7.1";
 
 const DEFAULT_CONFIG = {
   title: "Home Energy System",
@@ -104,7 +104,7 @@ const EDITOR_SECTIONS = [
     open: true,
     fields: [
       editorField("Grid name", ["power_box", "grid_name"], "text"),
-      editorField("Grid icon", ["power_box", "grid_icon"], "text", "MDI icon, for example mdi:transmission-tower"),
+      editorField("Grid icon", ["power_box", "grid_icon"], "icon", "Search Home Assistant icons"),
       editorField("Signed Grid power", ["power_box", "power"], "entity", "Positive import, negative export"),
       editorField("Ignore phantom Grid power up to (W)", ["power_box", "phantom_power_threshold"], "number", "Values from zero through this amount are treated as no Grid flow"),
       editorField("Grid voltage", ["power_box", "voltage"]),
@@ -121,8 +121,9 @@ const EDITOR_SECTIONS = [
     open: true,
     fields: [
       nameField(["power_box", "name"]),
-      editorField("Power Box icon", ["power_box", "icon"], "text", "MDI icon, for example mdi:electric-switchboard"),
+      editorField("Power Box icon", ["power_box", "icon"], "icon", "Search Home Assistant icons"),
       editorField("Power to off-grid inverter", ["power_box", "offgrid_power"]),
+      editorField("Ignore phantom Power Box power up to (W)", ["power_box", "offgrid_phantom_power_threshold"], "number", "Values from zero through this amount are treated as no flow to the Off-grid inverter"),
     ],
   },
   {
@@ -132,10 +133,10 @@ const EDITOR_SECTIONS = [
       editorField("House power", ["house", "power"]),
       editorField("Additional 1 name", ["house", "additional_1_name"], "text", "Leave blank to hide this load"),
       editorField("Additional 1 power", ["house", "additional_1_power"]),
-      editorField("Additional 1 icon", ["house", "additional_1_icon"], "text", "MDI icon, for example mdi:garage"),
+      editorField("Additional 1 icon", ["house", "additional_1_icon"], "icon", "Search Home Assistant icons"),
       editorField("Additional 2 name", ["house", "additional_2_name"], "text", "Leave blank to hide this load"),
       editorField("Additional 2 power", ["house", "additional_2_power"]),
-      editorField("Additional 2 icon", ["house", "additional_2_icon"], "text", "MDI icon, for example mdi:pool"),
+      editorField("Additional 2 icon", ["house", "additional_2_icon"], "icon", "Search Home Assistant icons"),
     ],
   },
   {
@@ -147,7 +148,7 @@ const EDITOR_SECTIONS = [
       editorField("Output current", ["grid_tie", "output_current"]),
       editorField("Frequency", ["grid_tie", "frequency"]),
       editorField("Status", ["grid_tie", "status"]),
-      editorField("Icon", ["grid_tie", "icon"], "text", "MDI icon, for example mdi:solar-power-variant"),
+      editorField("Icon", ["grid_tie", "icon"], "icon", "Search Home Assistant icons"),
       editorField("Solar total fallback", ["grid_tie", "solar_power"]),
     ],
   },
@@ -171,7 +172,7 @@ const EDITOR_SECTIONS = [
       editorField("Output energy today", ["offgrid", "output_daily"]),
       editorField("Status", ["offgrid", "status"]),
       editorField("Mode", ["offgrid", "mode"]),
-      editorField("Icon", ["offgrid", "icon"], "text", "MDI icon, for example mdi:home-lightning-bolt-outline"),
+      editorField("Icon", ["offgrid", "icon"], "icon", "Search Home Assistant icons"),
       editorField("Load percent", ["offgrid", "load_percent"]),
       editorField("Temperature", ["offgrid", "temperature"]),
       editorField("Bus voltage", ["offgrid", "bus_voltage"]),
@@ -506,8 +507,9 @@ class HomePowerFlowCard extends HTMLElement {
 
   _powerBoxGroup(powerBox) {
     const powerBoxIcon = powerBox.icon ? `<ha-icon icon="${this._escape(powerBox.icon)}"></ha-icon>` : ICONS.powerbox;
+    const filterPhantomPower = Number(powerBox.offgrid_phantom_power_threshold) > 0;
     const fields = [
-      ["To off-grid inverter", powerBox.offgrid_power || this.config.offgrid.grid_input_power, "W"],
+      ["To off-grid inverter", filterPhantomPower ? { calculated: "power-box-filtered-power" } : powerBox.offgrid_power || this.config.offgrid.grid_input_power, "W"],
     ];
     return `<section class="group"><div class="group-label">Power distribution</div>${this._expandPanel("power-box-panel", powerBox.name || "Power Box", powerBoxIcon, fields)}</section>`;
   }
@@ -586,7 +588,9 @@ class HomePowerFlowCard extends HTMLElement {
     const gridPower = gridImport - gridExport;
     const gridVoltage = this._number(this.config.power_box?.voltage);
     const calculatedGridCurrent = gridVoltage > 0 ? Math.abs(gridPower) / gridVoltage : Number.NaN;
-    const offgridGridPower = this._number(this.config.power_box?.offgrid_power || this.config.offgrid.grid_input_power);
+    const rawOffgridGridPower = this._number(this.config.power_box?.offgrid_power || this.config.offgrid.grid_input_power);
+    const powerBoxPhantomThreshold = Math.max(0, Number(this.config.power_box?.offgrid_phantom_power_threshold) || 0);
+    const offgridGridPower = Math.abs(rawOffgridGridPower) <= powerBoxPhantomThreshold ? 0 : rawOffgridGridPower;
     const offgridOutput = this._number(this.config.offgrid.output_power);
     const gridOutput = this._number(this.config.grid_tie.output_power);
     const offgridOutputVoltage = this._number(this.config.offgrid.output_voltage);
@@ -613,6 +617,7 @@ class HomePowerFlowCard extends HTMLElement {
       "battery-status": batteryStatus,
       "battery-direction": `${this._formatPower(Math.abs(batteryPower))} ${batteryStatus.toLowerCase()}`,
       "power-box-power": this._formatPower(Math.abs(offgridGridPower)),
+      "power-box-filtered-power": this._formatPower(offgridGridPower),
       "power-box-direction": gridImport > 0 ? "Importing from grid" : gridExport > 0 ? "Exporting to grid" : "Grid idle",
       "house-node-power": this._formatPower(housePower),
       "grid-node-power": this._formatPower(Math.abs(gridPower)),
@@ -961,6 +966,9 @@ class HomePowerFlowCardEditor extends HTMLElement {
     if (field.type === "boolean") {
       return `<label class="toggle field"><span>${this._escape(field.label)}</span><input data-editor-field="${id}" type="checkbox" ${value ? "checked" : ""}></label>`;
     }
+    if (field.type === "icon") {
+      return `<label class="field icon-field"><span>${this._escape(field.label)}</span><ha-icon-picker data-editor-field="${id}"></ha-icon-picker>${field.helper ? `<small>${this._escape(field.helper)}</small>` : ""}</label>`;
+    }
     if (field.type === "text" || field.type === "number") {
       const inputType = field.type === "number" ? ' type="number" step="any"' : ' type="text"';
       const input = customElements.get("ha-textfield")
@@ -1000,7 +1008,7 @@ class HomePowerFlowCardEditor extends HTMLElement {
         .editor-input { width:100%; min-height:44px; }
         .native-input { height:44px; padding:0 11px; color:var(--primary-text-color); border:1px solid var(--divider-color); border-radius:8px; outline:none; background:var(--card-background-color); font:inherit; }
         .native-input:focus { border-color:var(--primary-color); box-shadow:0 0 0 1px var(--primary-color); }
-        ha-entity-picker { width:100%; }
+        ha-entity-picker,ha-icon-picker { width:100%; }
         .toggle { grid-column:span 1; min-height:44px; flex-direction:row; align-items:center; justify-content:space-between; padding:0 10px; border:1px solid var(--divider-color); border-radius:8px; }
         .toggle input { width:19px; height:19px; accent-color:var(--primary-color); }
         .subsection { grid-column:1/-1; margin:12px 0 0; background:var(--secondary-background-color); }
@@ -1019,7 +1027,7 @@ class HomePowerFlowCardEditor extends HTMLElement {
     this.shadowRoot.querySelectorAll("[data-editor-field]").forEach((control) => {
       const path = this._fieldPaths.get(control.dataset.editorField);
       if (!path) return;
-      if (control.localName === "ha-entity-picker") {
+      if (control.localName === "ha-entity-picker" || control.localName === "ha-icon-picker") {
         control.addEventListener("value-changed", (event) => this._updatePath(path, event.detail?.value ?? event.target.value ?? ""));
       } else {
         control.addEventListener(control.type === "checkbox" ? "change" : "input", (event) => {
@@ -1034,12 +1042,12 @@ class HomePowerFlowCardEditor extends HTMLElement {
 
   _syncEntityPickers() {
     if (!this.shadowRoot || !this._config) return;
-    this.shadowRoot.querySelectorAll("ha-entity-picker[data-editor-field]").forEach((picker) => {
+    this.shadowRoot.querySelectorAll("ha-entity-picker[data-editor-field],ha-icon-picker[data-editor-field]").forEach((picker) => {
       const path = this._fieldPaths.get(picker.dataset.editorField);
       if (this._hass) picker.hass = this._hass;
       picker.value = this._valueAt(path) || "";
       picker.label = "";
-      picker.allowCustomEntity = true;
+      if (picker.localName === "ha-entity-picker") picker.allowCustomEntity = true;
     });
   }
 
