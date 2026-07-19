@@ -62,7 +62,7 @@ The card uses these signs to animate flow direction:
 
 The dashboard card editor covers the complete system configuration with separate Grid and Power Box sections, plus the house and up to two optional named additional loads, both inverters, up to four PV inputs per inverter, combined battery bank, three battery packs, all 48 optional cell-voltage sensors, and display options.
 
-Diagram icons can be resized from the visual editor using the **Diagram icon size (%)** setting. The supported range is 50% to 125%, with 100% retaining the standard layout.
+Each editable diagram icon has its own adjacent **Icon size (%)** setting in the visual editor. Grid, Power Box, both inverters, and both optional loads can be resized independently from 50% to 125%; 100% retains the standard size.
 
 Grid current can use a sensor or be calculated from absolute Grid power divided by voltage. Separate Grid and Power Box phantom-power cutoffs treat readings from zero through their configured wattages as idle, suppressing the displayed power, status, colour, and flow animation; the Grid cutoff also suppresses calculated current. Grid, Power Box, both inverters, and optional loads support editable names and MDI icons.
 

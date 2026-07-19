@@ -1,9 +1,8 @@
-const CARD_VERSION = "0.7.4";
+const CARD_VERSION = "0.7.5";
 
 const DEFAULT_CONFIG = {
   title: "Home Energy System",
   precision: 1,
-  icon_size: 100,
   show_zero_flows: false,
   show_overview: false,
 };
@@ -22,18 +21,19 @@ const ICONS = {
 const EDITOR_STUB_CONFIG = {
   title: "Home Energy System",
   precision: 1,
-  icon_size: 100,
   cell_warning_delta: 0.03,
   show_zero_flows: false,
   show_overview: false,
-  power_box: { name: "Power Box" },
-  house: { name: "House and Additional" },
+  power_box: { name: "Power Box", icon_size: 100, grid_icon_size: 100 },
+  house: { name: "House and Additional", additional_1_icon_size: 100, additional_2_icon_size: 100 },
   grid_tie: {
     name: "Grid-tie Inverter",
+    icon_size: 100,
     arrays: [{ name: "Grid-tie PV 1" }, { name: "Grid-tie PV 2" }],
   },
   offgrid: {
     name: "Off-grid Inverter",
+    icon_size: 100,
     arrays: [{ name: "Off-grid PV 1" }, { name: "Off-grid PV 2" }],
   },
   battery_bank: { name: "Battery Bank" },
@@ -88,7 +88,6 @@ const EDITOR_SECTIONS = [
     fields: [
       editorField("Title", ["title"], "text"),
       editorField("Decimal places", ["precision"], "number"),
-      editorField("Diagram icon size (%)", ["icon_size"], "number", "50 to 125; default is 100"),
       editorField("Cell warning spread (V)", ["cell_warning_delta"], "number"),
       editorField("Show zero-power lines", ["show_zero_flows"], "boolean"),
       editorField("Show overview tiles", ["show_overview"], "boolean"),
@@ -100,6 +99,7 @@ const EDITOR_SECTIONS = [
     fields: [
       editorField("Grid name", ["power_box", "grid_name"], "text"),
       editorField("Grid icon", ["power_box", "grid_icon"], "icon", "Search Home Assistant icons"),
+      editorField("Grid icon size (%)", ["power_box", "grid_icon_size"], "number", "50 to 125; default is 100"),
       editorField("Signed Grid power", ["power_box", "power"], "entity", "Positive import, negative export"),
       editorField("Ignore phantom Grid power up to (W)", ["power_box", "phantom_power_threshold"], "number", "Values from zero through this amount are treated as no Grid flow"),
       editorField("Grid voltage", ["power_box", "voltage"]),
@@ -117,6 +117,7 @@ const EDITOR_SECTIONS = [
     fields: [
       nameField(["power_box", "name"]),
       editorField("Power Box icon", ["power_box", "icon"], "icon", "Search Home Assistant icons"),
+      editorField("Power Box icon size (%)", ["power_box", "icon_size"], "number", "50 to 125; default is 100"),
       editorField("Power to off-grid inverter", ["power_box", "offgrid_power"]),
       editorField("Ignore phantom Power Box power up to (W)", ["power_box", "offgrid_phantom_power_threshold"], "number", "Values from zero through this amount are treated as no flow to the Off-grid inverter"),
     ],
@@ -129,9 +130,11 @@ const EDITOR_SECTIONS = [
       editorField("Additional 1 name", ["house", "additional_1_name"], "text", "Leave blank to hide this load"),
       editorField("Additional 1 power", ["house", "additional_1_power"]),
       editorField("Additional 1 icon", ["house", "additional_1_icon"], "icon", "Search Home Assistant icons"),
+      editorField("Additional 1 icon size (%)", ["house", "additional_1_icon_size"], "number", "50 to 125; default is 100"),
       editorField("Additional 2 name", ["house", "additional_2_name"], "text", "Leave blank to hide this load"),
       editorField("Additional 2 power", ["house", "additional_2_power"]),
       editorField("Additional 2 icon", ["house", "additional_2_icon"], "icon", "Search Home Assistant icons"),
+      editorField("Additional 2 icon size (%)", ["house", "additional_2_icon_size"], "number", "50 to 125; default is 100"),
     ],
   },
   {
@@ -144,6 +147,7 @@ const EDITOR_SECTIONS = [
       editorField("Frequency", ["grid_tie", "frequency"]),
       editorField("Status", ["grid_tie", "status"]),
       editorField("Icon", ["grid_tie", "icon"], "icon", "Search Home Assistant icons"),
+      editorField("Icon size (%)", ["grid_tie", "icon_size"], "number", "50 to 125; default is 100"),
       editorField("Solar total fallback", ["grid_tie", "solar_power"]),
     ],
   },
@@ -168,6 +172,7 @@ const EDITOR_SECTIONS = [
       editorField("Status", ["offgrid", "status"]),
       editorField("Mode", ["offgrid", "mode"]),
       editorField("Icon", ["offgrid", "icon"], "icon", "Search Home Assistant icons"),
+      editorField("Icon size (%)", ["offgrid", "icon_size"], "number", "50 to 125; default is 100"),
       editorField("Load percent", ["offgrid", "load_percent"]),
       editorField("Temperature", ["offgrid", "temperature"]),
       editorField("Bus voltage", ["offgrid", "bus_voltage"]),
@@ -267,8 +272,6 @@ class HomePowerFlowCard extends HTMLElement {
     const gridPvPositions = this._pvPositions(gridArrays.length, 20);
     const offgridPvPositions = this._pvPositions(offgridArrays.length, 50);
     const expandedPvLayout = gridArrays.length > 2 || offgridArrays.length > 2;
-    const requestedIconSize = Number(this.config.icon_size);
-    const iconScale = Math.min(1.25, Math.max(0.5, Number.isFinite(requestedIconSize) ? requestedIconSize / 100 : 1));
     const gridName = String(this.config.power_box?.grid_name || "Grid").trim() || "Grid";
     const gridIcon = this.config.power_box?.grid_icon
       ? `<ha-icon icon="${this._escape(this.config.power_box.grid_icon)}"></ha-icon>`
@@ -296,29 +299,29 @@ class HomePowerFlowCard extends HTMLElement {
         </div>` : ""}
 
         <div class="diagram-wrap">
-          <div class="diagram additional-count-${additionalLoads.length} ${expandedPvLayout ? "pv-expanded" : ""}" style="--diagram-icon-scale:${iconScale}" aria-label="Home power flow diagram">
+          <div class="diagram additional-count-${additionalLoads.length} ${expandedPvLayout ? "pv-expanded" : ""}" aria-label="Home power flow diagram">
             ${this._flowSvg(additionalLoads.length, gridPvPositions, offgridPvPositions)}
             ${gridArrays.map((array, i) => `<button class="node pv-node node-grid-pv-${i + 1}" style="left:${gridPvPositions[i].x}%;top:${gridPvPositions[i].y}%" type="button" data-open-panel="grid-array-${i}">${this._nodeHead(ICONS.panel, array.name || `PV${i + 1}`, `grid-pv-${i}`)}</button>`).join("")}
             <div class="total-node node-grid-solar"><strong data-value="grid-solar-total">—</strong></div>
             <button class="node node-offgrid-inverter" type="button" data-open-panel="offgrid-inverter-panel">
-              ${this._nodeHead(offgridIcon, offgridName, "offgrid-output")}
+              ${this._nodeHead(offgridIcon, offgridName, "offgrid-output", "", this.config.offgrid.icon_size)}
             </button>
             <button class="node node-grid-inverter" type="button" data-open-panel="grid-inverter-panel">
-              ${this._nodeHead(gridTieIcon, gridTieName, "grid-output")}
+              ${this._nodeHead(gridTieIcon, gridTieName, "grid-output", "", this.config.grid_tie.icon_size)}
             </button>
             ${offgridArrays.map((array, i) => `<button class="node pv-node node-offgrid-pv-${i + 1}" style="left:${offgridPvPositions[i].x}%;top:${offgridPvPositions[i].y}%" type="button" data-open-panel="offgrid-array-${i}">${this._nodeHead(ICONS.panel, array.name || `PV${i + 1}`, `offgrid-pv-${i}`)}</button>`).join("")}
             <div class="total-node node-offgrid-solar"><strong data-value="offgrid-solar-total">—</strong></div>
             <div class="node node-static node-power-box">
-              ${this._nodeHead(powerBoxIcon, powerBoxName, "power-box-power", "To inverter")}
+              ${this._nodeHead(powerBoxIcon, powerBoxName, "power-box-power", "To inverter", this.config.power_box?.icon_size)}
             </div>
             <div class="node node-static node-house">
               ${this._nodeHead(ICONS.house, "House", "house-node-power")}
             </div>
             ${additionalLoads.map((load, index) => `<div class="node node-static node-additional node-additional-${index + 1}">
-              ${this._nodeHead(`<ha-icon icon="${this._escape(load.icon)}"></ha-icon>`, load.name, `additional-${index}-node-power`)}
+              ${this._nodeHead(`<ha-icon icon="${this._escape(load.icon)}"></ha-icon>`, load.name, `additional-${index}-node-power`, "", load.iconSize)}
             </div>`).join("")}
             <button class="node node-grid" type="button" data-open-panel="grid-panel">
-              ${this._nodeHead(gridIcon, gridName, "grid-node-power")}
+              ${this._nodeHead(gridIcon, gridName, "grid-node-power", "", this.config.power_box?.grid_icon_size)}
             </button>
             <button class="node node-battery-bank" type="button" data-open-panel="battery-bank-panel">
               <div class="battery-state"><span class="battery-stack">${ICONS.battery}</span><span data-value="battery-status">Idle</span></div>
@@ -355,8 +358,13 @@ class HomePowerFlowCard extends HTMLElement {
     this.shadowRoot.addEventListener("click", (event) => this._handleClick(event));
   }
 
-  _nodeHead(icon, label, valueKey, sublabel = "") {
-    return `<div class="node-icon">${icon}</div><div class="node-copy"><b>${this._escape(label)}</b>${sublabel ? `<small>${this._escape(sublabel)}</small>` : ""}<strong data-value="${valueKey}">—</strong></div>`;
+  _iconScale(iconSize) {
+    const requested = Number(iconSize);
+    return Math.min(1.25, Math.max(0.5, Number.isFinite(requested) ? requested / 100 : 1));
+  }
+
+  _nodeHead(icon, label, valueKey, sublabel = "", iconSize = 100) {
+    return `<div class="node-icon" style="zoom:${this._iconScale(iconSize)}">${icon}</div><div class="node-copy"><b>${this._escape(label)}</b>${sublabel ? `<small>${this._escape(sublabel)}</small>` : ""}<strong data-value="${valueKey}">—</strong></div>`;
   }
 
   _additionalLoads(house = this.config.house || {}) {
@@ -367,6 +375,7 @@ class HomePowerFlowCard extends HTMLElement {
         name,
         power: house[`additional_${number}_power`] || (legacy ? house.additional_power || house.shed_powerpoints : ""),
         icon: house[`additional_${number}_icon`] || (legacy ? house.additional_icon : "") || "mdi:home-outline",
+        iconSize: house[`additional_${number}_icon_size`] || (legacy ? house.additional_icon_size : 100) || 100,
       };
     }).filter((load) => load.name);
   }
@@ -794,7 +803,6 @@ class HomePowerFlowCard extends HTMLElement {
       .node-static { cursor:default; }
       .node:hover,.pack-node:hover { background:#151c25; }
       .node-icon { width:31px; height:31px; display:grid; place-items:center; }
-      .diagram .node-icon,.diagram .battery-stack,.diagram .pack-icon { zoom:var(--diagram-icon-scale,1); }
       .node-icon svg,.equipment-icon svg { width:29px; height:29px; fill:none; stroke:currentColor; stroke-width:2.4; stroke-linecap:round; stroke-linejoin:round; }
       .node-icon ha-icon,.equipment-icon ha-icon { width:29px; height:29px; }
       .node-copy { width:100%; min-width:0; text-align:center; } .node-copy b { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:#98a8bd; font-size:8px; font-weight:500; }

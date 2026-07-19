@@ -1,7 +1,6 @@
 type: custom:home-power-flow-card
 title: Home Energy System
 precision: 1
-icon_size: 100
 cell_warning_delta: 0.03
 show_zero_flows: false
 show_overview: false
@@ -24,15 +23,19 @@ house:
   additional_1_name: Shed
   additional_1_power: sensor.shed_em_powerpoints_power
   additional_1_icon: mdi:garage
+  additional_1_icon_size: 100
   additional_2_name: ""
   additional_2_power:
   additional_2_icon: mdi:pool
+  additional_2_icon_size: 100
 
 power_box:
   name: Main Power Box
   icon: mdi:electric-switchboard
+  icon_size: 100
   grid_name: Grid
   grid_icon: mdi:transmission-tower
+  grid_icon_size: 100
   calculate_current: true
   phantom_power_threshold: 20
   # Positive imports from Grid; negative exports to Grid.
@@ -48,6 +51,7 @@ power_box:
 grid_tie:
   name: Grid-tie Inverter
   icon: mdi:solar-power-variant
+  icon_size: 100
   output_power: sensor.inverter_on_grid_l1_power
   output_voltage: sensor.inverter_on_grid_l1_voltage
   output_current: sensor.inverter_on_grid_l1_current
@@ -65,6 +69,7 @@ grid_tie:
 offgrid:
   name: MPP Solar Off-grid Inverter
   icon: mdi:home-lightning-bolt-outline
+  icon_size: 100
   output_power: sensor.mppsolar_inverter_output_watts_power
   output_voltage: sensor.mppsolar_inverter_output_voltage
   output_current: sensor.mppsolar_output_current
