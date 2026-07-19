@@ -67,7 +67,7 @@ The dashboard card editor covers the complete system configuration: Grid and Pow
 
 Existing YAML cards remain supported. `example-card.yaml` is provided as a cleaned, ready-to-use configuration for this system, but normal installation and editing no longer require copying or changing YAML.
 
-The compact schematic combines both existing Sunsynk views: grid and grid-tie generation meet at the power box, the power box connects to the off-grid inverter, and the off-grid inverter connects to the house, shed load, two solar inputs, and three individually visible battery packs. Each pack has its own power-flow line. Tap any main component or battery pack to open its detailed readings.
+The compact schematic combines both existing Sunsynk views: grid and grid-tie generation meet at the power box, the power box connects to the off-grid inverter, and the off-grid inverter connects to the house, shed load, two solar inputs, and three individually visible battery packs. Each pack has its own power-flow line. Tap any main component or battery pack to open its live readings in a popup without moving down the dashboard.
 
 ## Current entity mapping
 

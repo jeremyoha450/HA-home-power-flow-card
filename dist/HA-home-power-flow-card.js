@@ -1,4 +1,4 @@
-const CARD_VERSION = "0.5.1";
+const CARD_VERSION = "0.6.0";
 
 const DEFAULT_CONFIG = {
   title: "Home Energy System",
@@ -330,6 +330,10 @@ class HomePowerFlowCard extends HTMLElement {
           ${this._loadsGroup(this.config.house)}
         </div>
         <div class="updated" data-value="updated">Waiting for Home Assistant…</div>
+        <dialog class="detail-dialog" data-detail-dialog aria-label="Equipment details">
+          <button class="dialog-close" type="button" data-close-dialog aria-label="Close details">&times;</button>
+          <div class="dialog-content" data-dialog-content></div>
+        </dialog>
       </ha-card>
     `;
     this.shadowRoot.addEventListener("click", (event) => this._handleClick(event));
@@ -616,18 +620,21 @@ class HomePowerFlowCard extends HTMLElement {
   }
 
   _summary(id, text) {
-    const element = this.shadowRoot.querySelector(`[data-summary="${id}"]`);
-    if (element) element.textContent = text;
+    this.shadowRoot.querySelectorAll(`[data-summary="${id}"]`).forEach((element) => {
+      element.textContent = text;
+    });
   }
 
   _cellSpread(id, cells) {
-    const element = this.shadowRoot.querySelector(`[data-cell-spread="${id}"]`);
-    if (!element || !cells.length) return;
+    const elements = this.shadowRoot.querySelectorAll(`[data-cell-spread="${id}"]`);
+    if (!elements.length || !cells.length) return;
     const values = cells.map((entity) => this._number(entity, Number.NaN)).filter(Number.isFinite);
     if (!values.length) return;
     const spread = Math.max(...values) - Math.min(...values);
-    element.textContent = `Spread ${spread.toFixed(3)} V`;
-    element.classList.toggle("warn", spread > (this.config.cell_warning_delta || 0.030));
+    elements.forEach((element) => {
+      element.textContent = `Spread ${spread.toFixed(3)} V`;
+      element.classList.toggle("warn", spread > (this.config.cell_warning_delta || 0.030));
+    });
   }
 
   _setFlow(id, power, threshold, reverse = false) {
@@ -647,18 +654,30 @@ class HomePowerFlowCard extends HTMLElement {
   }
 
   _handleClick(event) {
+    if (event.target.matches?.("[data-detail-dialog]")) {
+      event.target.close();
+      return;
+    }
+    const closeDialog = event.target.closest("[data-close-dialog]");
+    if (closeDialog) {
+      this.shadowRoot.querySelector("[data-detail-dialog]")?.close();
+      return;
+    }
     const openPanel = event.target.closest("[data-open-panel]");
     if (openPanel) {
-      const details = this.shadowRoot.querySelector(".details");
-      const detailsToggle = this.shadowRoot.querySelector("[data-toggle-details]");
       const panel = this.shadowRoot.querySelector(`[data-panel="${openPanel.dataset.openPanel}"]`);
-      details?.classList.add("open");
-      detailsToggle?.classList.add("open");
-      detailsToggle?.setAttribute("aria-expanded", "true");
-      panel?.classList.add("open");
-      panel?.querySelector("[data-expand]")?.setAttribute("aria-expanded", "true");
-      panel?.scrollIntoView({ behavior: "smooth", block: "nearest" });
-      if (panel) this._expanded.add(openPanel.dataset.openPanel);
+      const dialog = this.shadowRoot.querySelector("[data-detail-dialog]");
+      const content = this.shadowRoot.querySelector("[data-dialog-content]");
+      if (panel && dialog && content) {
+        const modalPanel = panel.cloneNode(true);
+        modalPanel.classList.add("open", "modal-equipment");
+        modalPanel.removeAttribute("data-panel");
+        const modalHeader = modalPanel.querySelector("[data-expand]");
+        modalHeader?.removeAttribute("data-expand");
+        modalHeader?.removeAttribute("aria-expanded");
+        content.replaceChildren(modalPanel);
+        if (!dialog.open) dialog.showModal();
+      }
       return;
     }
     const detailsToggle = event.target.closest("[data-toggle-details]");
@@ -759,6 +778,16 @@ class HomePowerFlowCard extends HTMLElement {
       .cells-head { display:flex;justify-content:space-between;margin:13px 2px 7px;font-size:10px}.cells-head span{color:var(--muted)}.cells-head .warn{color:#ff8a75}
       .cell-grid { display:grid;grid-template-columns:repeat(4,1fr);gap:4px}.cell{padding:6px 3px;border:1px solid rgba(114,230,162,.12);border-radius:7px;color:inherit;background:rgba(114,230,162,.035);cursor:pointer}.cell span{display:block;color:#6e8298;font-size:8px}.cell b{display:block;margin-top:2px;font-size:9px}.cell.unavailable{opacity:.4}
       .updated { padding:0 24px 17px; color:#596a80; font-size:9px; text-align:right; }
+      .detail-dialog { width:min(560px,calc(100vw - 24px)); max-width:none; max-height:min(82vh,720px); margin:auto; padding:44px 12px 12px; overflow:auto; color:var(--ink); border:1px solid rgba(255,255,255,.13); border-radius:16px; background:#0d1117; box-shadow:0 22px 70px rgba(0,0,0,.65); }
+      .detail-dialog::backdrop { background:rgba(0,0,0,.72); backdrop-filter:blur(3px); }
+      .dialog-close { position:absolute; z-index:2; top:9px; right:10px; width:32px; height:32px; display:grid; place-items:center; padding:0; color:#b6c3d6; border:1px solid rgba(255,255,255,.1); border-radius:50%; background:#151c25; font-size:24px; line-height:1; cursor:pointer; }
+      .dialog-close:hover { color:#fff; background:#202a36; }
+      .dialog-content .equipment { border:0; background:transparent; }
+      .dialog-content .equipment-head { padding:4px 46px 13px 4px; cursor:default; pointer-events:none; }
+      .dialog-content .equipment-head:hover { background:transparent; }
+      .dialog-content .equipment-head .chevron { display:none; }
+      .dialog-content .equipment-body { display:block; padding:0 2px 2px; }
+      .dialog-content .reading { background:#111821; }
       @keyframes flow{from{stroke-dashoffset:0}to{stroke-dashoffset:-20}} @keyframes pulse{50%{opacity:.4}} @keyframes reveal{from{opacity:0;transform:translateY(-4px)}}
       @media(max-width:700px){
         .card-head{padding:11px 14px 1px}.overview{grid-template-columns:repeat(2,1fr);padding:0 14px 12px}.diagram{height:600px}
