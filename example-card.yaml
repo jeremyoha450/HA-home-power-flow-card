@@ -4,7 +4,6 @@ precision: 1
 cell_warning_delta: 0.03
 show_zero_flows: false
 show_overview: false
-details_open: false
 
 # Combined battery-bank readings. If battery_total_power is omitted, the card
 # adds the three pack power sensors.
