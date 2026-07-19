@@ -1,4 +1,4 @@
-const CARD_VERSION = "0.3.1";
+const CARD_VERSION = "0.3.2";
 
 const DEFAULT_CONFIG = {
   title: "Home Energy System",
@@ -111,10 +111,10 @@ class HomePowerFlowCard extends HTMLElement {
               ${this._nodeHead(ICONS.sun, "Grid-tie solar", "grid-solar-total")}
             </button>
             <button class="node node-offgrid-inverter" type="button" data-open-panel="offgrid-inverter-panel">
-              ${this._nodeHead(ICONS.inverter, "Off-grid inverter", "offgrid-output")}
+              ${this._nodeHead(ICONS.inverter, "Off-grid", "offgrid-output")}
             </button>
             <button class="node node-grid-inverter" type="button" data-open-panel="grid-inverter-panel">
-              ${this._nodeHead(ICONS.inverter, "Grid-tie inverter", "grid-output")}
+              ${this._nodeHead(ICONS.inverter, "Grid-tie", "grid-output")}
             </button>
             <button class="node node-power-box" type="button" data-open-panel="power-box-panel">
               ${this._nodeHead(ICONS.grid, "Power box", "power-box-power")}
@@ -169,23 +169,17 @@ class HomePowerFlowCard extends HTMLElement {
     const count = Math.max(1, (this.config.batteries || []).length);
     const packBranches = Array.from({ length: count }, (_, i) => {
       const x = count === 1 ? 250 : 100 + (300 * i / (count - 1));
-      return `<path id="flow-battery-${i}" class="flow battery-flow battery-branch" d="M250 385 L${x.toFixed(1)} 385 L${x.toFixed(1)} 423"/>`;
+      return `<path id="flow-battery-${i}" class="flow battery-flow battery-branch" d="M305 385 L${x.toFixed(1)} 385 L${x.toFixed(1)} 423"/>`;
     }).join("");
     return `<svg class="flow-lines" viewBox="0 0 500 480" preserveAspectRatio="none" aria-hidden="true">
-      <defs>
-        <marker id="arrow-solar" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto"><path d="M0 0 7 3.5 0 7Z" class="arrow solar-arrow"/></marker>
-        <marker id="arrow-load" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto"><path d="M0 0 7 3.5 0 7Z" class="arrow load-arrow"/></marker>
-        <marker id="arrow-battery" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto"><path d="M0 0 7 3.5 0 7Z" class="arrow battery-arrow"/></marker>
-        <marker id="arrow-grid" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto"><path d="M0 0 7 3.5 0 7Z" class="arrow grid-arrow"/></marker>
-      </defs>
-      <path id="flow-grid" class="flow grid-flow" d="M60 240 L108 240" marker-end="url(#arrow-grid)"/>
-      <path id="flow-grid-solar" class="flow solar-flow" d="M115 75 L115 135" marker-end="url(#arrow-solar)"/>
-      <path id="flow-gridtie-box" class="flow solar-flow" d="M115 190 L115 215" marker-end="url(#arrow-solar)"/>
-      <path id="flow-box-inverter" class="flow grid-flow" d="M170 240 L235 240" marker-end="url(#arrow-grid)"/>
-      <path id="flow-offgrid-solar" class="flow solar-flow" d="M285 75 L285 205" marker-end="url(#arrow-solar)"/>
-      <path id="flow-offgrid-house" class="flow load-flow" d="M335 240 L410 240" marker-end="url(#arrow-load)"/>
-      <path id="flow-shed" class="flow load-flow" d="M370 240 L370 145 L410 145" marker-end="url(#arrow-load)"/>
-      <path id="flow-battery" class="flow battery-flow" d="M285 275 L285 345" marker-end="url(#arrow-battery)"/>
+      <path id="flow-grid" class="flow grid-flow" d="M50 240 L170 240"/>
+      <path id="flow-grid-solar" class="flow solar-flow" d="M120 75 L120 135"/>
+      <path id="flow-gridtie-box" class="flow solar-flow" d="M120 190 L120 215 L170 215 L170 240"/>
+      <path id="flow-box-inverter" class="flow grid-flow" d="M170 240 L260 240"/>
+      <path id="flow-offgrid-solar" class="flow solar-flow" d="M305 75 L305 205"/>
+      <path id="flow-offgrid-house" class="flow load-flow" d="M350 240 L410 240"/>
+      <path id="flow-shed" class="flow load-flow" d="M375 240 L375 145 L410 145"/>
+      <path id="flow-battery" class="flow battery-flow" d="M305 275 L305 345"/>
       ${packBranches}
     </svg>`;
   }
@@ -420,15 +414,6 @@ class HomePowerFlowCard extends HTMLElement {
     const active = Math.abs(power) >= threshold || this.config.show_zero_flows;
     line.classList.toggle("active", active);
     line.classList.toggle("reverse", reverse);
-    const marker = line.classList.contains("battery-flow")
-      ? "url(#arrow-battery)"
-      : line.classList.contains("grid-flow")
-        ? "url(#arrow-grid)"
-        : line.classList.contains("solar-flow")
-          ? "url(#arrow-solar)"
-          : "url(#arrow-load)";
-    line.removeAttribute(reverse ? "marker-end" : "marker-start");
-    line.setAttribute(reverse ? "marker-start" : "marker-end", marker);
     line.style.setProperty("--flow-speed", `${Math.max(0.55, 2.2 - Math.min(Math.abs(power) / 2500, 1.5))}s`);
   }
 
@@ -478,7 +463,7 @@ class HomePowerFlowCard extends HTMLElement {
     return `
       :host { --solar:#ffbd3b; --load:#53d6ff; --battery:#72e6a2; --grid:#b48cff; --ink:#f5f8ff; --muted:#91a2bd; display:block; }
       * { box-sizing:border-box; }
-      ha-card { overflow:hidden; color:var(--ink); background:radial-gradient(circle at 50% 35%,rgba(29,48,62,.28),transparent 48%),#0d1117; border:1px solid rgba(255,255,255,.07); box-shadow:0 12px 35px rgba(0,0,0,.2); }
+      ha-card { overflow:hidden; color:var(--ink); background:#0d1117; border:1px solid rgba(255,255,255,.07); box-shadow:0 12px 35px rgba(0,0,0,.2); }
       .card-head { display:block; padding:13px 16px 2px; text-align:center; }
       h1 { margin:0; color:#aebbd0; font-size:15px; font-weight:600; letter-spacing:.01em; } .card-head p { margin:2px 0 0; color:var(--muted); font-size:9px; }
       .status-pill { display:flex; align-items:center; gap:7px; padding:7px 10px; border:1px solid rgba(114,230,162,.22); border-radius:99px; color:#9cf0bd; background:rgba(114,230,162,.08); font-size:10px; letter-spacing:.12em; }
@@ -494,25 +479,25 @@ class HomePowerFlowCard extends HTMLElement {
       .flow.active { opacity:1; stroke-dasharray:2 8; animation:flow var(--flow-speed,1.3s) linear infinite; filter:drop-shadow(0 0 2px currentColor); will-change:stroke-dashoffset; }
       .flow.reverse { animation-direction:reverse; }
       .solar-flow { stroke:var(--solar); color:var(--solar); } .load-flow{stroke:var(--load);color:var(--load)} .battery-flow{stroke:var(--battery);color:var(--battery)} .grid-flow{stroke:var(--grid);color:var(--grid)}
-      .arrow { stroke:none; } .solar-arrow{fill:var(--solar)} .load-arrow{fill:var(--load)} .battery-arrow{fill:var(--battery)} .grid-arrow{fill:var(--grid)}
-      .node { position:absolute; z-index:2; display:grid; grid-template-columns:31px 1fr; align-items:center; gap:4px; width:116px; min-height:50px; padding:3px; color:var(--load); border:0; background:transparent; text-align:left; cursor:pointer; transform:translate(-50%,-50%); }
-      .node:hover,.pack-node:hover { background:rgba(255,255,255,.045); border-radius:9px; }
+      .node { position:absolute; z-index:2; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px; width:78px; min-height:76px; padding:3px; color:var(--load); border:0; border-radius:7px; background:#0d1117; text-align:center; cursor:pointer; transform:translate(-50%,-50%); }
+      .node:hover,.pack-node:hover { background:#151c25; }
       .node-icon { width:31px; height:31px; display:grid; place-items:center; }
       .node-icon svg,.equipment-icon svg { width:29px; height:29px; fill:none; stroke:currentColor; stroke-width:2.4; stroke-linecap:round; stroke-linejoin:round; }
-      .node-copy { min-width:0; } .node-copy b { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:#98a8bd; font-size:8px; font-weight:500; }
+      .node-copy { width:100%; min-width:0; text-align:center; } .node-copy b { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:#98a8bd; font-size:8px; font-weight:500; }
       .node-copy strong { display:inline-block; min-width:62px; margin-top:2px; padding:3px 5px; border:1px solid currentColor; border-radius:5px; color:currentColor; font-size:12px; text-align:center; white-space:nowrap; background:#0d1117; }
       .node-sub { position:absolute; left:45px; bottom:-1px; color:var(--muted); font-size:8px; white-space:nowrap; }
       .node-offgrid-inverter,.node-grid-inverter { background:transparent; }
       .battery-stack { display:flex; align-items:flex-end; width:31px; color:var(--battery); }
       .battery-stack svg { width:25px; height:31px; fill:#0d1117; stroke:currentColor; stroke-width:2.6; }
-      .node-grid{left:12%;top:50%;color:var(--grid)} .node-power-box{left:28%;top:50%;color:var(--grid)}
-      .node-grid-solar{left:23%;top:15%;color:var(--solar)} .node-grid-inverter{left:23%;top:34%;color:var(--load)}
-      .node-offgrid-solar{left:57%;top:15%;color:var(--solar)} .node-offgrid-inverter{left:57%;top:50%;color:var(--load)}
+      .node-grid{left:10%;top:50%;width:72px;color:var(--grid)} .node-power-box{left:34%;top:50%;width:72px;color:var(--grid)}
+      .node-grid .node-icon,.node-power-box .node-icon{width:27px;height:27px}.node-grid .node-icon svg,.node-power-box .node-icon svg{width:25px}.node-grid .node-copy strong,.node-power-box .node-copy strong{min-width:55px;font-size:11px}
+      .node-grid-solar{left:24%;top:15%;color:var(--solar)} .node-grid-inverter{left:24%;top:34%;color:var(--load)}
+      .node-offgrid-solar{left:61%;top:15%;color:var(--solar)} .node-offgrid-inverter{left:61%;top:50%;color:var(--load)}
       .node-house{left:88%;top:50%;color:var(--load)} .node-shed{left:88%;top:30%;color:#5ddfc6}
-      .node-battery-bank{left:57%;top:73%;color:var(--battery)}
+      .node-battery-bank{left:61%;top:73%;color:var(--battery)}
       .battery-row { position:absolute; z-index:3; left:10%; right:10%; bottom:5px; display:grid; grid-template-columns:repeat(var(--battery-count),minmax(0,1fr)); }
-      .pack-node { width:72px; min-width:0; min-height:43px; justify-self:center; display:grid; grid-template-columns:20px minmax(0,1fr); align-items:center; gap:3px; padding:2px; color:var(--battery); border:0; border-radius:7px; background:transparent; text-align:left; cursor:pointer; }
-      .pack-icon svg { width:19px; height:27px; fill:#0d1117; stroke:currentColor; stroke-width:2.5; }
+      .pack-node { width:54px; min-width:0; min-height:55px; justify-self:center; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:0; padding:2px; color:var(--battery); border:0; border-radius:7px; background:#0d1117; text-align:center; cursor:pointer; }
+      .pack-icon{height:23px}.pack-icon svg { width:18px; height:23px; fill:#0d1117; stroke:currentColor; stroke-width:2.5; }
       .pack-node b,.pack-node strong,.pack-node small { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
       .pack-node b { color:#8fa0b5; font-size:8px; font-weight:500; }.pack-node strong{font-size:12px}.pack-node small{display:none}
       .details-toggle { width:calc(100% - 28px); display:flex; align-items:center; justify-content:space-between; margin:7px 14px 13px; padding:11px 13px; color:var(--ink); border:1px solid rgba(255,255,255,.075); border-radius:10px; background:rgba(255,255,255,.025); text-align:left; cursor:pointer; }
@@ -536,10 +521,10 @@ class HomePowerFlowCard extends HTMLElement {
       @keyframes flow{from{stroke-dashoffset:0}to{stroke-dashoffset:-20}} @keyframes pulse{50%{opacity:.4}} @keyframes reveal{from{opacity:0;transform:translateY(-4px)}}
       @media(max-width:700px){
         .card-head{padding:11px 14px 1px}.overview{grid-template-columns:repeat(2,1fr);padding:0 14px 12px}.diagram{height:450px}
-        .node{width:106px;grid-template-columns:28px 1fr;gap:3px}.node-icon{width:28px}.node-icon svg{width:27px}.node-copy strong{min-width:58px;font-size:11px}.node-copy b{font-size:8px}
+        .node{width:76px}.node-icon{width:28px;height:28px}.node-icon svg{width:27px}.node-copy strong{min-width:58px;font-size:11px}.node-copy b{font-size:8px}
         .panel-grid,.batteries-grid{grid-template-columns:1fr}
       }
-      @media(max-width:390px){.metric strong{font-size:12px}.diagram{height:440px}.node{width:96px}.node-grid{left:13%}.node-power-box{left:29%}.node-house,.node-shed{left:87%}.battery-row{left:8%;right:8%}.pack-node{width:64px;grid-template-columns:18px 1fr}.pack-icon svg{width:17px}.pack-node b{font-size:7px}}
+      @media(max-width:390px){.metric strong{font-size:12px}.diagram{height:440px}.node{width:68px}.node-grid{left:10%;width:64px}.node-power-box{left:34%;width:64px}.node-offgrid-inverter,.node-offgrid-solar,.node-battery-bank{left:62%}.node-house,.node-shed{left:88%}.battery-row{left:8%;right:8%}.pack-node{width:48px}.pack-icon svg{width:16px}.pack-node b{font-size:7px}}
     `;
   }
 }
