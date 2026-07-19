@@ -1,4 +1,4 @@
-const CARD_VERSION = "0.4.1";
+const CARD_VERSION = "0.4.2";
 
 const DEFAULT_CONFIG = {
   title: "Home Energy System",
@@ -110,7 +110,7 @@ class HomePowerFlowCard extends HTMLElement {
             <button class="node node-offgrid-inverter" type="button" data-open-panel="offgrid-inverter-panel">
               ${this._nodeHead(ICONS.inverter, "Off-grid", "offgrid-output")}
             </button>
-            <div class="output-electrical"><span data-value="offgrid-output-voltage">—</span><span data-value="offgrid-output-current">—</span></div>
+            <div class="output-electrical"><span data-value="offgrid-output-voltage">—</span><span data-value="offgrid-output-current">—</span><span data-value="offgrid-output-frequency">—</span></div>
             <button class="node node-grid-inverter" type="button" data-open-panel="grid-inverter-panel">
               ${this._nodeHead(ICONS.inverter, "Grid-tie", "grid-output")}
             </button>
@@ -324,6 +324,7 @@ class HomePowerFlowCard extends HTMLElement {
     const gridOutput = this._number(this.config.grid_tie.output_power);
     const offgridOutputVoltage = this._number(this.config.offgrid.output_voltage);
     const offgridOutputCurrent = this._number(this.config.offgrid.output_current);
+    const offgridOutputFrequency = this._number(this.config.offgrid.frequency);
     const batteryStatus = Math.abs(batteryPower) < this.config.thresholds.battery
       ? "Idle"
       : batteryPower > 0 ? "Charging" : "Discharging";
@@ -338,6 +339,7 @@ class HomePowerFlowCard extends HTMLElement {
       "offgrid-output": this._formatPower(offgridOutput),
       "offgrid-output-voltage": this._state(this.config.offgrid.output_voltage) ? `${offgridOutputVoltage.toFixed(0)} V` : "—",
       "offgrid-output-current": this._state(this.config.offgrid.output_current) ? `${offgridOutputCurrent.toFixed(1).replace(/\.0$/, "")} A` : "—",
+      "offgrid-output-frequency": this._state(this.config.offgrid.frequency) ? `${offgridOutputFrequency.toFixed(2)} Hz` : "—",
       "grid-output": this._formatPower(gridOutput),
       "battery-soc": `${bankSoc.toFixed(0)}% SOC`,
       "battery-current": `${Math.abs(bankCurrent).toFixed(1)} A`,
@@ -523,7 +525,7 @@ class HomePowerFlowCard extends HTMLElement {
       .battery-stack svg { width:25px; height:31px; fill:#0d1117; stroke:currentColor; stroke-width:2.6; }
       .pv-node { width:64px; min-height:72px; color:var(--solar); }
       .pv-node .node-icon { width:34px; height:30px; }.pv-node .node-icon svg{width:34px;height:28px}.pv-node .node-copy strong{min-width:56px;border:0;padding:1px;font-size:12px;color:var(--solar)}
-      .node-grid{left:6%;top:13%;width:72px;color:var(--grid)} .node-power-box{left:20%;top:55%;width:72px;color:var(--grid)}
+      .node-grid{left:6%;top:6%;width:72px;color:var(--grid)} .node-power-box{left:20%;top:55%;width:72px;color:var(--grid)}
       .node-grid .node-icon,.node-power-box .node-icon{width:27px;height:27px}.node-grid .node-icon svg,.node-power-box .node-icon svg{width:25px}.node-grid .node-copy strong,.node-power-box .node-copy strong{min-width:55px;font-size:11px}
       .node-grid-pv-1{left:13%;top:18%}.node-grid-pv-2{left:27%;top:18%}.node-grid-solar{left:20%;top:28%}.node-grid-inverter{left:20%;top:40%;color:var(--load)}
       .node-offgrid-pv-1{left:43%;top:18%}.node-offgrid-pv-2{left:57%;top:18%}.node-offgrid-solar{left:50%;top:28%}.node-offgrid-inverter{left:50%;top:49%;color:var(--load)}
