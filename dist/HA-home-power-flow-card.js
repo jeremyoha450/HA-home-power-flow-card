@@ -1,8 +1,9 @@
-const CARD_VERSION = "0.7.3";
+const CARD_VERSION = "0.7.4";
 
 const DEFAULT_CONFIG = {
   title: "Home Energy System",
   precision: 1,
+  icon_size: 100,
   show_zero_flows: false,
   show_overview: false,
 };
@@ -21,6 +22,7 @@ const ICONS = {
 const EDITOR_STUB_CONFIG = {
   title: "Home Energy System",
   precision: 1,
+  icon_size: 100,
   cell_warning_delta: 0.03,
   show_zero_flows: false,
   show_overview: false,
@@ -86,6 +88,7 @@ const EDITOR_SECTIONS = [
     fields: [
       editorField("Title", ["title"], "text"),
       editorField("Decimal places", ["precision"], "number"),
+      editorField("Diagram icon size (%)", ["icon_size"], "number", "50 to 125; default is 100"),
       editorField("Cell warning spread (V)", ["cell_warning_delta"], "number"),
       editorField("Show zero-power lines", ["show_zero_flows"], "boolean"),
       editorField("Show overview tiles", ["show_overview"], "boolean"),
@@ -264,6 +267,8 @@ class HomePowerFlowCard extends HTMLElement {
     const gridPvPositions = this._pvPositions(gridArrays.length, 20);
     const offgridPvPositions = this._pvPositions(offgridArrays.length, 50);
     const expandedPvLayout = gridArrays.length > 2 || offgridArrays.length > 2;
+    const requestedIconSize = Number(this.config.icon_size);
+    const iconScale = Math.min(1.25, Math.max(0.5, Number.isFinite(requestedIconSize) ? requestedIconSize / 100 : 1));
     const gridName = String(this.config.power_box?.grid_name || "Grid").trim() || "Grid";
     const gridIcon = this.config.power_box?.grid_icon
       ? `<ha-icon icon="${this._escape(this.config.power_box.grid_icon)}"></ha-icon>`
@@ -291,7 +296,7 @@ class HomePowerFlowCard extends HTMLElement {
         </div>` : ""}
 
         <div class="diagram-wrap">
-          <div class="diagram additional-count-${additionalLoads.length} ${expandedPvLayout ? "pv-expanded" : ""}" aria-label="Home power flow diagram">
+          <div class="diagram additional-count-${additionalLoads.length} ${expandedPvLayout ? "pv-expanded" : ""}" style="--diagram-icon-scale:${iconScale}" aria-label="Home power flow diagram">
             ${this._flowSvg(additionalLoads.length, gridPvPositions, offgridPvPositions)}
             ${gridArrays.map((array, i) => `<button class="node pv-node node-grid-pv-${i + 1}" style="left:${gridPvPositions[i].x}%;top:${gridPvPositions[i].y}%" type="button" data-open-panel="grid-array-${i}">${this._nodeHead(ICONS.panel, array.name || `PV${i + 1}`, `grid-pv-${i}`)}</button>`).join("")}
             <div class="total-node node-grid-solar"><strong data-value="grid-solar-total">—</strong></div>
@@ -789,6 +794,7 @@ class HomePowerFlowCard extends HTMLElement {
       .node-static { cursor:default; }
       .node:hover,.pack-node:hover { background:#151c25; }
       .node-icon { width:31px; height:31px; display:grid; place-items:center; }
+      .diagram .node-icon,.diagram .battery-stack,.diagram .pack-icon { zoom:var(--diagram-icon-scale,1); }
       .node-icon svg,.equipment-icon svg { width:29px; height:29px; fill:none; stroke:currentColor; stroke-width:2.4; stroke-linecap:round; stroke-linejoin:round; }
       .node-icon ha-icon,.equipment-icon ha-icon { width:29px; height:29px; }
       .node-copy { width:100%; min-width:0; text-align:center; } .node-copy b { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:#98a8bd; font-size:8px; font-weight:500; }

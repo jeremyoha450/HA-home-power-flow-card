@@ -1,6 +1,7 @@
 type: custom:home-power-flow-card
 title: Home Energy System
 precision: 1
+icon_size: 100
 cell_warning_delta: 0.03
 show_zero_flows: false
 show_overview: false
