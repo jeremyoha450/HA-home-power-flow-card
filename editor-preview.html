@@ -28,7 +28,11 @@
     const editor=Card.getConfigElement();
     editor.setConfig(Card.getStubConfig());
     editor.hass={states:{}};
-    editor.addEventListener("config-changed",event=>document.querySelector("#events").textContent=`Changed: ${event.detail.config.title||"Untitled card"} | Grid: ${event.detail.config.power_box?.power||"not selected"} | Cell 1: ${event.detail.config.batteries?.[0]?.cells?.[0]||"not selected"}`);
+    editor.addEventListener("config-changed",event=>{
+      document.querySelector("#events").textContent=`Changed: ${event.detail.config.title||"Untitled card"} | Grid: ${event.detail.config.power_box?.power||"not selected"} | Cell 1: ${event.detail.config.batteries?.[0]?.cells?.[0]||"not selected"}`;
+      // Match Home Assistant, which immediately passes the changed config back to the editor.
+      editor.setConfig(event.detail.config);
+    });
     document.querySelector("#editor").append(editor);
   </script>
 </body>

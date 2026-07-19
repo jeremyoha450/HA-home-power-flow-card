@@ -1,4 +1,4 @@
-const CARD_VERSION = "0.6.1";
+const CARD_VERSION = "0.6.2";
 
 const DEFAULT_CONFIG = {
   title: "Home Energy System",
@@ -814,6 +814,12 @@ class HomePowerFlowCardEditor extends HTMLElement {
   }
 
   setConfig(config) {
+    const activeField = this.shadowRoot?.activeElement?.closest?.("[data-editor-field]");
+    if (activeField) {
+      this._config = JSON.parse(JSON.stringify(config || EDITOR_STUB_CONFIG));
+      this._syncEntityPickers();
+      return;
+    }
     if (this.shadowRoot) {
       this.shadowRoot.querySelectorAll("details[open]").forEach((section) => {
         if (section.dataset.section) this._openSections.add(section.dataset.section);
@@ -858,8 +864,11 @@ class HomePowerFlowCardEditor extends HTMLElement {
       return `<label class="toggle field"><span>${this._escape(field.label)}</span><input data-editor-field="${id}" type="checkbox" ${value ? "checked" : ""}></label>`;
     }
     if (field.type === "text" || field.type === "number") {
-      const numberOptions = field.type === "number" ? ' type="number" step="any"' : ' type="text"';
-      return `<label class="field"><span>${this._escape(field.label)}</span><input class="editor-input" data-editor-field="${id}"${numberOptions} value="${this._escape(value ?? "")}">${field.helper ? `<small>${this._escape(field.helper)}</small>` : ""}</label>`;
+      const inputType = field.type === "number" ? ' type="number" step="any"' : ' type="text"';
+      const input = customElements.get("ha-textfield")
+        ? `<ha-textfield class="editor-input" data-editor-field="${id}" data-editor-type="${field.type}" label="${this._escape(field.label)}"${inputType} value="${this._escape(value ?? "")}"></ha-textfield>`
+        : `<label class="field"><span>${this._escape(field.label)}</span><input class="editor-input native-input" data-editor-field="${id}" data-editor-type="${field.type}"${inputType} value="${this._escape(value ?? "")}"></label>`;
+      return `<div class="field text-field">${input}${field.helper ? `<small>${this._escape(field.helper)}</small>` : ""}</div>`;
     }
     return `<label class="field entity-field"><span>${this._escape(field.label)}</span><ha-entity-picker data-editor-field="${id}"></ha-entity-picker>${field.helper ? `<small>${this._escape(field.helper)}</small>` : ""}</label>`;
   }
@@ -890,8 +899,9 @@ class HomePowerFlowCardEditor extends HTMLElement {
         .field { min-width:0; display:flex; flex-direction:column; gap:5px; color:var(--secondary-text-color); font-size:12px; }
         .field > span { min-height:16px; }
         .field small { color:var(--secondary-text-color); font-size:10px; line-height:1.3; }
-        .editor-input { width:100%; height:44px; padding:0 11px; color:var(--primary-text-color); border:1px solid var(--divider-color); border-radius:8px; outline:none; background:var(--card-background-color); font:inherit; }
-        .editor-input:focus { border-color:var(--primary-color); box-shadow:0 0 0 1px var(--primary-color); }
+        .editor-input { width:100%; min-height:44px; }
+        .native-input { height:44px; padding:0 11px; color:var(--primary-text-color); border:1px solid var(--divider-color); border-radius:8px; outline:none; background:var(--card-background-color); font:inherit; }
+        .native-input:focus { border-color:var(--primary-color); box-shadow:0 0 0 1px var(--primary-color); }
         ha-entity-picker { width:100%; }
         .toggle { grid-column:span 1; min-height:44px; flex-direction:row; align-items:center; justify-content:space-between; padding:0 10px; border:1px solid var(--divider-color); border-radius:8px; }
         .toggle input { width:19px; height:19px; accent-color:var(--primary-color); }
@@ -916,7 +926,8 @@ class HomePowerFlowCardEditor extends HTMLElement {
       } else {
         control.addEventListener(control.type === "checkbox" ? "change" : "input", (event) => {
           const input = event.currentTarget;
-          const value = input.type === "checkbox" ? input.checked : input.type === "number" && input.value !== "" ? Number(input.value) : input.value;
+          const editorType = input.dataset.editorType || input.type;
+          const value = input.type === "checkbox" ? input.checked : editorType === "number" && input.value !== "" ? Number(input.value) : input.value;
           this._updatePath(path, value);
         });
       }
