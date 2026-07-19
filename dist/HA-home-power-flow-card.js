@@ -1,4 +1,4 @@
-const CARD_VERSION = "0.7.7";
+const CARD_VERSION = "0.7.8";
 
 const DEFAULT_CONFIG = {
   title: "Home Energy System",
@@ -817,7 +817,7 @@ class HomePowerFlowCard extends HTMLElement {
       .node-static { cursor:default; }
       .node:hover,.pack-node:hover { background:#151c25; }
       .node,.total-node { transition:opacity .3s,filter .3s,color .3s; }
-      .power-inactive { color:#596574 !important; opacity:.42; filter:grayscale(1); }
+      .power-inactive { color:#596574 !important; opacity:.18; filter:grayscale(1); }
       .power-inactive .node-copy b { color:#596574 !important; }
       .node-icon { width:31px; height:31px; display:grid; place-items:center; }
       .node-icon svg,.equipment-icon svg { width:29px; height:29px; fill:none; stroke:currentColor; stroke-width:2.4; stroke-linecap:round; stroke-linejoin:round; }
