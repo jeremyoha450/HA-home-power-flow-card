@@ -1,4 +1,4 @@
-const CARD_VERSION = "0.7.9";
+const CARD_VERSION = "0.7.10";
 
 const DEFAULT_CONFIG = {
   title: "Home Energy System",
@@ -729,6 +729,7 @@ class HomePowerFlowCard extends HTMLElement {
     const line = this.shadowRoot.getElementById(id);
     if (!line) return;
     const active = power !== 0 || this.config.show_zero_flows;
+    line.classList.toggle("zero-flow", power === 0);
     line.classList.toggle("active", active);
     line.classList.toggle("reverse", reverse);
     line.style.setProperty("--flow-speed", `${Math.max(0.55, 2.2 - Math.min(Math.abs(power) / 2500, 1.5))}s`);
@@ -813,7 +814,7 @@ class HomePowerFlowCard extends HTMLElement {
       .flow.active { opacity:1; stroke-dasharray:2 8; animation:flow var(--flow-speed,1.3s) linear infinite; filter:drop-shadow(0 0 2px currentColor); will-change:stroke-dashoffset; }
       .flow.reverse { animation-direction:reverse; }
       .solar-flow { stroke:var(--solar); color:var(--solar); } .load-flow{stroke:var(--load);color:var(--load)} .battery-flow{stroke:var(--battery);color:var(--battery)} .grid-flow{stroke:var(--grid);color:var(--grid)}
-      .solar-flow:not(.active) { opacity:0; }
+      .solar-flow.zero-flow { opacity:0 !important; visibility:hidden; }
       .node { position:absolute; z-index:2; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px; width:78px; min-height:76px; padding:3px; color:var(--load); border:0; border-radius:7px; background:transparent; text-align:center; cursor:pointer; transform:translate(-50%,-50%); }
       .node-static { cursor:default; }
       .node:hover,.pack-node:hover { background:#151c25; }
