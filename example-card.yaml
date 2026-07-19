@@ -30,6 +30,11 @@ house:
 
 power_box:
   name: Main Power Box
+  icon: mdi:electric-switchboard
+  grid_name: Grid
+  grid_icon: mdi:transmission-tower
+  calculate_current: true
+  phantom_power_threshold: 20
   # Positive imports from Grid; negative exports to Grid.
   power: sensor.powerbox_grid_power
   # This is the value displayed below Power Box as "To inverter".
@@ -41,6 +46,7 @@ power_box:
 
 grid_tie:
   name: Grid-tie Inverter
+  icon: mdi:solar-power-variant
   output_power: sensor.inverter_on_grid_l1_power
   output_voltage: sensor.inverter_on_grid_l1_voltage
   output_current: sensor.inverter_on_grid_l1_current
@@ -57,6 +63,7 @@ grid_tie:
 
 offgrid:
   name: MPP Solar Off-grid Inverter
+  icon: mdi:home-lightning-bolt-outline
   output_power: sensor.mppsolar_inverter_output_watts_power
   output_voltage: sensor.mppsolar_inverter_output_voltage
   output_current: sensor.mppsolar_output_current

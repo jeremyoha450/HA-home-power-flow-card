@@ -60,11 +60,13 @@ The card uses these signs to animate flow direction:
 
 ## Visual editor
 
-The dashboard card editor covers the complete system configuration with separate Grid and Power Box sections, plus the house and up to two optional named additional loads, both inverters, four PV inputs, combined battery bank, three battery packs, all 48 optional cell-voltage sensors, display options, and flow thresholds.
+The dashboard card editor covers the complete system configuration with separate Grid and Power Box sections, plus the house and up to two optional named additional loads, both inverters, up to four PV inputs per inverter, combined battery bank, three battery packs, all 48 optional cell-voltage sensors, display options, and flow thresholds.
+
+Grid current can use a sensor or be calculated from absolute Grid power divided by voltage. The optional phantom-power cutoff treats readings from zero through the configured wattage as idle, suppressing the displayed power, calculated current, status, colour, and flow animation. Grid, Power Box, both inverters, and optional loads support editable names and MDI icons.
 
 Existing YAML cards remain supported. `example-card.yaml` is provided as a cleaned, ready-to-use configuration for this system, but normal installation and editing no longer require copying or changing YAML.
 
-The compact schematic combines both existing Sunsynk views: grid and grid-tie generation meet at the power box, the power box connects to the off-grid inverter, and the off-grid inverter connects to the house, up to two optional named additional loads, two solar inputs, and three individually visible battery packs. Each optional load has its own power sensor and MDI icon setting. Leave either Additional name blank in the visual editor to hide that node; the House and remaining branches automatically reposition for zero, one, or two additional loads. Each battery pack has its own power-flow line.
+The compact schematic combines both existing Sunsynk views: grid and grid-tie generation meet at the power box, the power box connects to the off-grid inverter, and the off-grid inverter connects to the house, up to two optional named additional loads, up to four solar inputs on each inverter, and three individually visible battery packs. PV inputs automatically switch to a compact two-row layout when a third or fourth array is configured. Each optional load has its own power sensor and MDI icon setting. Leave either Additional name blank in the visual editor to hide that node; the House and remaining branches automatically reposition for zero, one, or two additional loads. Each battery pack has its own power-flow line.
 
 ## Current entity mapping
 

@@ -1,4 +1,4 @@
-const CARD_VERSION = "0.6.4";
+const CARD_VERSION = "0.7.0";
 
 const DEFAULT_CONFIG = {
   title: "Home Energy System",
@@ -58,7 +58,6 @@ const pvEditorSection = (title, root) => ({
     editorField("Power", [...root, "power"]),
     editorField("Voltage", [...root, "voltage"]),
     editorField("Current", [...root, "current"]),
-    editorField("Charging power (optional)", [...root, "charging_power"]),
   ],
 });
 const batteryEditorSection = (index) => ({
@@ -104,9 +103,13 @@ const EDITOR_SECTIONS = [
     title: "Grid",
     open: true,
     fields: [
+      editorField("Grid name", ["power_box", "grid_name"], "text"),
+      editorField("Grid icon", ["power_box", "grid_icon"], "text", "MDI icon, for example mdi:transmission-tower"),
       editorField("Signed Grid power", ["power_box", "power"], "entity", "Positive import, negative export"),
+      editorField("Ignore phantom Grid power up to (W)", ["power_box", "phantom_power_threshold"], "number", "Values from zero through this amount are treated as no Grid flow"),
       editorField("Grid voltage", ["power_box", "voltage"]),
-      editorField("Grid current", ["power_box", "current"]),
+      editorField("Calculate current from power and voltage", ["power_box", "calculate_current"], "boolean"),
+      editorField("Grid current sensor", ["power_box", "current"], "entity", "Used when calculated current is turned off"),
       editorField("Grid frequency", ["power_box", "frequency"]),
       editorField("Grid energy", ["power_box", "energy"]),
       editorField("Daily import", ["power_box", "daily_import"]),
@@ -118,6 +121,7 @@ const EDITOR_SECTIONS = [
     open: true,
     fields: [
       nameField(["power_box", "name"]),
+      editorField("Power Box icon", ["power_box", "icon"], "text", "MDI icon, for example mdi:electric-switchboard"),
       editorField("Power to off-grid inverter", ["power_box", "offgrid_power"]),
     ],
   },
@@ -143,11 +147,14 @@ const EDITOR_SECTIONS = [
       editorField("Output current", ["grid_tie", "output_current"]),
       editorField("Frequency", ["grid_tie", "frequency"]),
       editorField("Status", ["grid_tie", "status"]),
+      editorField("Icon", ["grid_tie", "icon"], "text", "MDI icon, for example mdi:solar-power-variant"),
       editorField("Solar total fallback", ["grid_tie", "solar_power"]),
     ],
   },
   pvEditorSection("Grid-tie PV 1", ["grid_tie", "arrays", 0]),
   pvEditorSection("Grid-tie PV 2", ["grid_tie", "arrays", 1]),
+  pvEditorSection("Grid-tie PV 3", ["grid_tie", "arrays", 2]),
+  pvEditorSection("Grid-tie PV 4", ["grid_tie", "arrays", 3]),
   {
     title: "Off-grid Inverter",
     fields: [
@@ -156,7 +163,7 @@ const EDITOR_SECTIONS = [
       editorField("Output voltage", ["offgrid", "output_voltage"]),
       editorField("Output current", ["offgrid", "output_current"]),
       editorField("Output frequency", ["offgrid", "frequency"]),
-      editorField("Grid / grid-tie input fallback", ["offgrid", "grid_input_power"]),
+      editorField("External Power monitor", ["offgrid", "grid_input_power"]),
       editorField("Solar total", ["offgrid", "solar_power"]),
       editorField("Solar generated today", ["offgrid", "solar_daily"]),
       editorField("Solar today alternate", ["offgrid", "solar_daily_alt"]),
@@ -164,6 +171,7 @@ const EDITOR_SECTIONS = [
       editorField("Output energy today", ["offgrid", "output_daily"]),
       editorField("Status", ["offgrid", "status"]),
       editorField("Mode", ["offgrid", "mode"]),
+      editorField("Icon", ["offgrid", "icon"], "text", "MDI icon, for example mdi:home-lightning-bolt-outline"),
       editorField("Load percent", ["offgrid", "load_percent"]),
       editorField("Temperature", ["offgrid", "temperature"]),
       editorField("Bus voltage", ["offgrid", "bus_voltage"]),
@@ -171,6 +179,8 @@ const EDITOR_SECTIONS = [
   },
   pvEditorSection("Off-grid PV 1", ["offgrid", "arrays", 0]),
   pvEditorSection("Off-grid PV 2", ["offgrid", "arrays", 1]),
+  pvEditorSection("Off-grid PV 3", ["offgrid", "arrays", 2]),
+  pvEditorSection("Off-grid PV 4", ["offgrid", "arrays", 3]),
   {
     title: "Battery Bank",
     fields: [
@@ -267,9 +277,24 @@ class HomePowerFlowCard extends HTMLElement {
 
   _renderShell() {
     const batteries = this.config.batteries || [];
-    const offgridArrays = this.config.offgrid.arrays || [];
-    const gridArrays = this.config.grid_tie.arrays || [];
+    const offgridArrays = this._configuredArrays(this.config.offgrid);
+    const gridArrays = this._configuredArrays(this.config.grid_tie);
     const additionalLoads = this._additionalLoads();
+    const gridPvPositions = this._pvPositions(gridArrays.length, 20);
+    const offgridPvPositions = this._pvPositions(offgridArrays.length, 50);
+    const expandedPvLayout = gridArrays.length > 2 || offgridArrays.length > 2;
+    const gridName = String(this.config.power_box?.grid_name || "Grid").trim() || "Grid";
+    const gridIcon = this.config.power_box?.grid_icon
+      ? `<ha-icon icon="${this._escape(this.config.power_box.grid_icon)}"></ha-icon>`
+      : ICONS.grid;
+    const powerBoxName = String(this.config.power_box?.name || "Power Box").trim() || "Power Box";
+    const powerBoxIcon = this.config.power_box?.icon
+      ? `<ha-icon icon="${this._escape(this.config.power_box.icon)}"></ha-icon>`
+      : ICONS.powerbox;
+    const gridTieName = String(this.config.grid_tie.name || "Grid-tie").trim() || "Grid-tie";
+    const gridTieIcon = this.config.grid_tie.icon ? `<ha-icon icon="${this._escape(this.config.grid_tie.icon)}"></ha-icon>` : ICONS.inverter;
+    const offgridName = String(this.config.offgrid.name || "Off-grid").trim() || "Off-grid";
+    const offgridIcon = this.config.offgrid.icon ? `<ha-icon icon="${this._escape(this.config.offgrid.icon)}"></ha-icon>` : ICONS.inverter;
     this.shadowRoot.innerHTML = `
       <style>${this._styles()}</style>
       <ha-card>
@@ -285,21 +310,21 @@ class HomePowerFlowCard extends HTMLElement {
         </div>` : ""}
 
         <div class="diagram-wrap">
-          <div class="diagram additional-count-${additionalLoads.length}" aria-label="Home power flow diagram">
-            ${this._flowSvg(additionalLoads.length)}
-            ${gridArrays.slice(0, 2).map((array, i) => `<button class="node pv-node node-grid-pv-${i + 1}" type="button" data-open-panel="grid-array-${i}">${this._nodeHead(ICONS.panel, `PV${i + 1}`, `grid-pv-${i}`)}</button>`).join("")}
+          <div class="diagram additional-count-${additionalLoads.length} ${expandedPvLayout ? "pv-expanded" : ""}" aria-label="Home power flow diagram">
+            ${this._flowSvg(additionalLoads.length, gridPvPositions, offgridPvPositions)}
+            ${gridArrays.map((array, i) => `<button class="node pv-node node-grid-pv-${i + 1}" style="left:${gridPvPositions[i].x}%;top:${gridPvPositions[i].y}%" type="button" data-open-panel="grid-array-${i}">${this._nodeHead(ICONS.panel, array.name || `PV${i + 1}`, `grid-pv-${i}`)}</button>`).join("")}
             <div class="total-node node-grid-solar"><strong data-value="grid-solar-total">—</strong></div>
             <button class="node node-offgrid-inverter" type="button" data-open-panel="offgrid-inverter-panel">
-              ${this._nodeHead(ICONS.inverter, "Off-grid", "offgrid-output")}
+              ${this._nodeHead(offgridIcon, offgridName, "offgrid-output")}
             </button>
             <div class="output-electrical"><span data-value="offgrid-output-voltage">—</span><span data-value="offgrid-output-current">—</span><span data-value="offgrid-output-frequency">—</span></div>
             <button class="node node-grid-inverter" type="button" data-open-panel="grid-inverter-panel">
-              ${this._nodeHead(ICONS.inverter, "Grid-tie", "grid-output")}
+              ${this._nodeHead(gridTieIcon, gridTieName, "grid-output")}
             </button>
-            ${offgridArrays.slice(0, 2).map((array, i) => `<button class="node pv-node node-offgrid-pv-${i + 1}" type="button" data-open-panel="offgrid-array-${i}">${this._nodeHead(ICONS.panel, `PV${i + 1}`, `offgrid-pv-${i}`)}</button>`).join("")}
+            ${offgridArrays.map((array, i) => `<button class="node pv-node node-offgrid-pv-${i + 1}" style="left:${offgridPvPositions[i].x}%;top:${offgridPvPositions[i].y}%" type="button" data-open-panel="offgrid-array-${i}">${this._nodeHead(ICONS.panel, array.name || `PV${i + 1}`, `offgrid-pv-${i}`)}</button>`).join("")}
             <div class="total-node node-offgrid-solar"><strong data-value="offgrid-solar-total">—</strong></div>
             <div class="node node-static node-power-box">
-              ${this._nodeHead(ICONS.powerbox, "Power box", "power-box-power", "To inverter")}
+              ${this._nodeHead(powerBoxIcon, powerBoxName, "power-box-power", "To inverter")}
             </div>
             <div class="node node-static node-house">
               ${this._nodeHead(ICONS.house, "House", "house-node-power")}
@@ -308,7 +333,7 @@ class HomePowerFlowCard extends HTMLElement {
               ${this._nodeHead(`<ha-icon icon="${this._escape(load.icon)}"></ha-icon>`, load.name, `additional-${index}-node-power`)}
             </div>`).join("")}
             <button class="node node-grid" type="button" data-open-panel="grid-panel">
-              ${this._nodeHead(ICONS.grid, "Grid", "grid-node-power")}
+              ${this._nodeHead(gridIcon, gridName, "grid-node-power")}
             </button>
             <button class="node node-battery-bank" type="button" data-open-panel="battery-bank-panel">
               <div class="battery-state"><span class="battery-stack">${ICONS.battery}</span><span data-value="battery-status">Idle</span></div>
@@ -329,11 +354,11 @@ class HomePowerFlowCard extends HTMLElement {
           <span class="chevron">${ICONS.chevron}</span>
         </button>
         <div class="details ${this.config.details_open ? "open" : ""}">
-          ${this._solarGroup("offgrid", "Off-grid solar arrays", this.config.offgrid.arrays || [], this.config.offgrid.solar_power)}
+          ${this._solarGroup("offgrid", "Off-grid solar arrays", offgridArrays, this.config.offgrid.solar_power)}
           ${this.config.battery_bank ? this._batteryBankGroup(this.config.battery_bank) : ""}
           ${this._batteryGroup(this.config.batteries || [])}
           ${this._inverterGroup("offgrid-inverter-panel", this.config.offgrid, "Off-grid inverter")}
-          ${this._solarGroup("grid", "Grid-tie solar arrays", this.config.grid_tie.arrays || [], this.config.grid_tie.solar_power)}
+          ${this._solarGroup("grid", "Grid-tie solar arrays", gridArrays, this.config.grid_tie.solar_power)}
           ${this._inverterGroup("grid-inverter-panel", this.config.grid_tie, "Grid-tie inverter")}
           ${this.config.power_box ? this._gridGroup(this.config.power_box) : ""}
           ${this.config.power_box ? this._powerBoxGroup(this.config.power_box) : ""}
@@ -365,7 +390,30 @@ class HomePowerFlowCard extends HTMLElement {
     }).filter((load) => load.name);
   }
 
-  _flowSvg(additionalCount = 0) {
+  _configuredArrays(inverter = {}) {
+    return (inverter.arrays || []).filter((array) => array && (array.name || array.power || array.voltage || array.current)).slice(0, 4);
+  }
+
+  _pvPositions(count, center) {
+    if (count <= 1) return count ? [{ x: center, y: 18 }] : [];
+    if (count === 2) return [{ x: center - 7, y: 18 }, { x: center + 7, y: 18 }];
+    const positions = [
+      { x: center - 7, y: 12 }, { x: center + 7, y: 12 },
+      { x: center - 7, y: 22 }, { x: center + 7, y: 22 },
+    ];
+    if (count === 3) positions[2] = { x: center, y: 22 };
+    return positions.slice(0, Math.min(count, 4));
+  }
+
+  _pvFlowPaths(id, positions, center) {
+    return positions.map((position, index) => {
+      const x = position.x * 6;
+      const y = position.y * 6.2 + 24;
+      return `<path id="flow-${id}-pv-${index}" class="flow solar-flow" d="M${x.toFixed(1)} ${y.toFixed(1)} L${x.toFixed(1)} 166 L${center} 166 L${center} 180"/>`;
+    }).join("");
+  }
+
+  _flowSvg(additionalCount = 0, gridPvPositions = [], offgridPvPositions = []) {
     const count = Math.max(1, (this.config.batteries || []).length);
     const packBranches = Array.from({ length: count }, (_, i) => {
       const x = 72 + ((i + 0.5) * 456 / count);
@@ -373,13 +421,11 @@ class HomePowerFlowCard extends HTMLElement {
     }).join("");
     return `<svg class="flow-lines" viewBox="0 0 600 620" preserveAspectRatio="none" aria-hidden="true">
       <path id="flow-grid" class="flow grid-flow" d="M48 75 L48 90 L20 90 L20 340 L119 340"/>
-      <path id="flow-grid-pv-0" class="flow solar-flow" d="M80 120 L80 150 L120 150 L120 165"/>
-      <path id="flow-grid-pv-1" class="flow solar-flow" d="M160 120 L160 150 L120 150"/>
+      ${this._pvFlowPaths("grid", gridPvPositions, 120)}
       <path id="flow-grid-solar" class="flow solar-flow" d="M120 191 L120 218"/>
       <path id="flow-gridtie-box" class="flow solar-flow" d="M120 286 L120 315 L132 315 L132 327"/>
       <path id="flow-box-inverter" class="flow grid-flow" d="M145 340 L220 340 L220 300 L272 300"/>
-      <path id="flow-offgrid-pv-0" class="flow solar-flow" d="M260 120 L260 150 L300 150 L300 165"/>
-      <path id="flow-offgrid-pv-1" class="flow solar-flow" d="M340 120 L340 150 L300 150"/>
+      ${this._pvFlowPaths("offgrid", offgridPvPositions, 300)}
       <path id="flow-offgrid-solar" class="flow solar-flow" d="M300 191 L300 267"/>
       <path id="flow-offgrid-house" class="flow load-flow" d="${additionalCount === 0 ? "M328 300 L514 300" : additionalCount === 1 ? "M328 300 L465 300 L465 345 L514 345" : "M328 300 L465 300 L465 390 L514 390"}"/>
       ${additionalCount >= 1 ? `<path id="flow-additional-0" class="flow load-flow" d="M465 300 L465 ${additionalCount === 1 ? 225 : 210} L514 ${additionalCount === 1 ? 225 : 210}"/>` : ""}
@@ -392,7 +438,6 @@ class HomePowerFlowCard extends HTMLElement {
   _solarGroup(id, label, arrays, totalPower) {
     const panels = arrays.length ? arrays.map((array, i) => this._expandPanel(`${id}-array-${i}`, array.name || `Array ${i + 1}`, ICONS.panel, [
       ["Power", array.power, "W"], ["Voltage", array.voltage, "V"], ["Current", array.current, "A"],
-      ["Charging power", array.charging_power, "W"],
     ])).join("") : this._expandPanel(`${id}-array-total`, "Combined array output", ICONS.panel, [["Power", totalPower, "W"]]);
     return `<section class="group">
       <div class="group-label">${this._escape(label)}</div>
@@ -429,36 +474,42 @@ class HomePowerFlowCard extends HTMLElement {
   }
 
   _inverterGroup(id, inverter, fallbackName) {
+    const inverterIcon = inverter.icon ? `<ha-icon icon="${this._escape(inverter.icon)}"></ha-icon>` : ICONS.inverter;
     const fields = [
       ["AC output power", inverter.output_power, "W"], ["AC output voltage", inverter.output_voltage, "V"],
       ["AC output current", inverter.output_current, "A"], ["AC frequency", inverter.frequency, "Hz"],
       ["Load", inverter.load_percent, "%"], ["Temperature", inverter.temperature, "°C"],
-      ["DC / bus voltage", inverter.bus_voltage, "V"], ["Grid / grid-tie input", inverter.grid_input_power, "W"],
+      ["DC / bus voltage", inverter.bus_voltage, "V"], ["External Power monitor", inverter.grid_input_power, "W"],
       ["PV power", inverter.solar_power, "W"], ["PV generation today", inverter.solar_daily, "kWh"],
       ["PV today (alternate)", inverter.solar_daily_alt, "kWh"], ["PV generation total", inverter.solar_total, "kWh"],
       ["Output today", inverter.output_daily, "kWh"],
       ["Status", inverter.status, ""], ["Mode", inverter.mode, ""],
     ];
-    return `<section class="group"><div class="group-label">Inverter</div>${this._expandPanel(id, inverter.name || fallbackName, ICONS.inverter, fields)}</section>`;
+    return `<section class="group"><div class="group-label">Inverter</div>${this._expandPanel(id, inverter.name || fallbackName, inverterIcon, fields)}</section>`;
   }
 
   _gridGroup(powerBox) {
     const hasSeparateGridSensors = powerBox.grid_import_power || powerBox.grid_export_power;
+    const filterPhantomPower = Number(powerBox.phantom_power_threshold) > 0;
+    const gridName = String(powerBox.grid_name || "Grid").trim() || "Grid";
+    const gridIcon = powerBox.grid_icon ? `<ha-icon icon="${this._escape(powerBox.grid_icon)}"></ha-icon>` : ICONS.grid;
     const fields = [
-      [hasSeparateGridSensors ? "Grid import" : "Grid net power", powerBox.grid_import_power || powerBox.power, "W"],
-      ["Grid export", powerBox.grid_export_power, "W"],
-      ["Voltage", powerBox.voltage, "V"], ["Current", powerBox.current, "A"],
+      [hasSeparateGridSensors ? "Grid import" : "Grid net power", filterPhantomPower ? { calculated: hasSeparateGridSensors ? "grid-filtered-import" : "grid-filtered-power" } : powerBox.grid_import_power || powerBox.power, "W"],
+      ["Grid export", hasSeparateGridSensors ? (filterPhantomPower ? { calculated: "grid-filtered-export" } : powerBox.grid_export_power) : null, "W"],
+      ["Voltage", powerBox.voltage, "V"],
+      [powerBox.calculate_current ? "Calculated current" : "Current", powerBox.calculate_current ? { calculated: "grid-calculated-current" } : powerBox.current, "A"],
       ["Frequency", powerBox.frequency, "Hz"], ["Daily import", powerBox.daily_import, "kWh"],
       ["Daily export", powerBox.daily_export, "kWh"], ["Grid energy", powerBox.energy, "kWh"],
     ];
-    return `<section class="group"><div class="group-label">Grid connection</div>${this._expandPanel("grid-panel", "Grid", ICONS.grid, fields)}</section>`;
+    return `<section class="group"><div class="group-label">Grid connection</div>${this._expandPanel("grid-panel", gridName, gridIcon, fields)}</section>`;
   }
 
   _powerBoxGroup(powerBox) {
+    const powerBoxIcon = powerBox.icon ? `<ha-icon icon="${this._escape(powerBox.icon)}"></ha-icon>` : ICONS.powerbox;
     const fields = [
       ["To off-grid inverter", powerBox.offgrid_power || this.config.offgrid.grid_input_power, "W"],
     ];
-    return `<section class="group"><div class="group-label">Power distribution</div>${this._expandPanel("power-box-panel", powerBox.name || "Power box", ICONS.powerbox, fields)}</section>`;
+    return `<section class="group"><div class="group-label">Power distribution</div>${this._expandPanel("power-box-panel", powerBox.name || "Power Box", powerBoxIcon, fields)}</section>`;
   }
 
   _loadsGroup(house) {
@@ -485,14 +536,17 @@ class HomePowerFlowCard extends HTMLElement {
   }
 
   _reading(label, entity, unit, precision = this.config.precision) {
+    if (typeof entity === "object" && entity?.calculated) {
+      return `<div class="reading calculated-reading"><span>${this._escape(label)}</span><b data-value="${this._escape(entity.calculated)}">—</b></div>`;
+    }
     return `<button type="button" class="reading" data-entity="${this._escape(entity)}">
       <span>${this._escape(label)}</span><b data-entity-value="${this._escape(entity)}" data-unit="${this._escape(unit)}" data-precision="${precision}">—</b>
     </button>`;
   }
 
   _renderValues() {
-    const offgridArrays = this.config.offgrid.arrays || [];
-    const gridArrays = this.config.grid_tie.arrays || [];
+    const offgridArrays = this._configuredArrays(this.config.offgrid);
+    const gridArrays = this._configuredArrays(this.config.grid_tie);
     const batteries = this.config.batteries || [];
     const offgridSolar = this.config.offgrid.solar_power
       ? this._number(this.config.offgrid.solar_power)
@@ -520,13 +574,18 @@ class HomePowerFlowCard extends HTMLElement {
     const hasSeparateGridSensors = Boolean(
       this.config.power_box?.grid_import_power || this.config.power_box?.grid_export_power
     );
-    const gridImport = hasSeparateGridSensors
+    const rawGridImport = hasSeparateGridSensors
       ? this._number(this.config.power_box?.grid_import_power)
       : Math.max(gridMeterPower, 0);
-    const gridExport = hasSeparateGridSensors
+    const rawGridExport = hasSeparateGridSensors
       ? this._number(this.config.power_box?.grid_export_power)
       : Math.max(-gridMeterPower, 0);
+    const phantomPowerThreshold = Math.max(0, Number(this.config.power_box?.phantom_power_threshold) || 0);
+    const gridImport = rawGridImport <= phantomPowerThreshold ? 0 : rawGridImport;
+    const gridExport = rawGridExport <= phantomPowerThreshold ? 0 : rawGridExport;
     const gridPower = gridImport - gridExport;
+    const gridVoltage = this._number(this.config.power_box?.voltage);
+    const calculatedGridCurrent = gridVoltage > 0 ? Math.abs(gridPower) / gridVoltage : Number.NaN;
     const offgridGridPower = this._number(this.config.power_box?.offgrid_power || this.config.offgrid.grid_input_power);
     const offgridOutput = this._number(this.config.offgrid.output_power);
     const gridOutput = this._number(this.config.grid_tie.output_power);
@@ -541,7 +600,7 @@ class HomePowerFlowCard extends HTMLElement {
       "total-solar": this._formatPower(totalSolar),
       "house-power": this._formatPower(housePower),
       "battery-power": `${this._formatPower(Math.abs(batteryPower))} ${batteryStatus.toLowerCase()}`,
-      "grid-power": gridImport > 0 ? `${this._formatPower(gridImport)} import` : `${this._formatPower(gridExport)} export`,
+      "grid-power": gridImport > 0 ? `${this._formatPower(gridImport)} import` : gridExport > 0 ? `${this._formatPower(gridExport)} export` : "0 W idle",
       "offgrid-solar-total": this._formatPower(offgridSolar),
       "grid-solar-total": this._formatPower(gridSolar),
       "offgrid-output": this._formatPower(offgridOutput),
@@ -557,24 +616,29 @@ class HomePowerFlowCard extends HTMLElement {
       "power-box-direction": gridImport > 0 ? "Importing from grid" : gridExport > 0 ? "Exporting to grid" : "Grid idle",
       "house-node-power": this._formatPower(housePower),
       "grid-node-power": this._formatPower(Math.abs(gridPower)),
-      "grid-direction": gridPower >= 0 ? "Importing" : "Exporting",
+      "grid-filtered-power": this._formatPower(gridPower),
+      "grid-filtered-import": this._formatPower(gridImport),
+      "grid-filtered-export": this._formatPower(gridExport),
+      "grid-calculated-current": Number.isFinite(calculatedGridCurrent) ? `${calculatedGridCurrent.toFixed(this.config.precision)} A` : "—",
+      "grid-direction": gridImport > 0 ? "Importing" : gridExport > 0 ? "Exporting" : "Idle",
       "offgrid-status": this._state(this.config.offgrid.status)?.state || "Online",
       "grid-status": this._state(this.config.grid_tie.status)?.state || "Online",
       "updated": `Updated ${new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })}`,
     };
     Object.entries(values).forEach(([key, value]) => {
-      const element = this.shadowRoot.querySelector(`[data-value="${key}"]`);
-      if (element) element.textContent = value;
+      this.shadowRoot.querySelectorAll(`[data-value="${key}"]`).forEach((element) => {
+        element.textContent = value;
+      });
     });
     additionalPowers.forEach((power, index) => {
       const element = this.shadowRoot.querySelector(`[data-value="additional-${index}-node-power"]`);
       if (element) element.textContent = this._formatPower(power);
     });
-    gridArrays.slice(0, 2).forEach((array, i) => {
+    gridArrays.forEach((array, i) => {
       const element = this.shadowRoot.querySelector(`[data-value="grid-pv-${i}"]`);
       if (element) element.textContent = this._power(array.power);
     });
-    offgridArrays.slice(0, 2).forEach((array, i) => {
+    offgridArrays.forEach((array, i) => {
       const element = this.shadowRoot.querySelector(`[data-value="offgrid-pv-${i}"]`);
       if (element) element.textContent = this._power(array.power);
     });
@@ -611,8 +675,8 @@ class HomePowerFlowCard extends HTMLElement {
       this._summary("power-box-panel", `${this._formatPower(Math.abs(offgridGridPower))} to off-grid inverter`);
     }
 
-    offgridArrays.slice(0, 2).forEach((array, i) => this._setFlow(`flow-offgrid-pv-${i}`, this._number(array.power), this.config.thresholds.solar));
-    gridArrays.slice(0, 2).forEach((array, i) => this._setFlow(`flow-grid-pv-${i}`, this._number(array.power), this.config.thresholds.solar));
+    offgridArrays.forEach((array, i) => this._setFlow(`flow-offgrid-pv-${i}`, this._number(array.power), this.config.thresholds.solar));
+    gridArrays.forEach((array, i) => this._setFlow(`flow-grid-pv-${i}`, this._number(array.power), this.config.thresholds.solar));
     this._setFlow("flow-offgrid-solar", offgridSolar, this.config.thresholds.solar);
     this._setFlow("flow-grid-solar", gridSolar, this.config.thresholds.solar);
     this._setFlow("flow-offgrid-house", offgridOutput, 20);
@@ -760,7 +824,7 @@ class HomePowerFlowCard extends HTMLElement {
       .node:hover,.pack-node:hover { background:#151c25; }
       .node-icon { width:31px; height:31px; display:grid; place-items:center; }
       .node-icon svg,.equipment-icon svg { width:29px; height:29px; fill:none; stroke:currentColor; stroke-width:2.4; stroke-linecap:round; stroke-linejoin:round; }
-      .node-icon ha-icon { width:29px; height:29px; }
+      .node-icon ha-icon,.equipment-icon ha-icon { width:29px; height:29px; }
       .node-copy { width:100%; min-width:0; text-align:center; } .node-copy b { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:#98a8bd; font-size:8px; font-weight:500; }
       .node-copy small { display:block; color:#7f91a8; font-size:7px; line-height:8px; white-space:nowrap; }
       .node-copy strong { display:inline-block; min-width:62px; margin-top:2px; padding:3px 5px; border:1px solid currentColor; border-radius:5px; color:currentColor; font-size:12px; text-align:center; white-space:nowrap; background:#0d1117; }
@@ -777,10 +841,13 @@ class HomePowerFlowCard extends HTMLElement {
       .battery-stack svg { width:25px; height:31px; fill:#0d1117; stroke:currentColor; stroke-width:2.6; }
       .pv-node { width:64px; min-height:72px; color:var(--solar); }
       .pv-node .node-icon { width:34px; height:30px; }.pv-node .node-icon svg{width:34px;height:28px}.pv-node .node-copy strong{min-width:56px;border:0;padding:1px;font-size:12px;color:var(--solar)}
+      .pv-expanded .pv-node { min-height:54px; }
+      .pv-expanded .pv-node .node-icon { width:28px;height:23px }.pv-expanded .pv-node .node-icon svg{width:28px;height:22px}.pv-expanded .pv-node .node-copy b{font-size:7px}.pv-expanded .pv-node .node-copy strong{font-size:10px}
       .node-grid{left:8%;top:6%;width:72px;color:var(--grid)} .node-power-box{left:22%;top:59%;width:72px;color:var(--grid)}
       .node-grid .node-icon,.node-power-box .node-icon{width:27px;height:27px}.node-grid .node-icon svg,.node-power-box .node-icon svg{width:25px}.node-grid .node-copy strong,.node-power-box .node-copy strong{min-width:55px;font-size:11px}
-      .node-grid-pv-1{left:13%;top:18%}.node-grid-pv-2{left:27%;top:18%}.node-grid-solar{left:20%;top:28%}.node-grid-inverter{left:20%;top:40%;color:var(--load)}
-      .node-offgrid-pv-1{left:43%;top:18%}.node-offgrid-pv-2{left:57%;top:18%}.node-offgrid-solar{left:50%;top:28%}.node-offgrid-inverter{left:50%;top:49%;color:var(--load)}
+      .node-grid-solar{left:20%;top:28%}.node-grid-inverter{left:20%;top:40%;width:96px;color:var(--load)}
+      .node-offgrid-solar{left:50%;top:28%}.node-offgrid-inverter{left:50%;top:49%;color:var(--load)}
+      .pv-expanded .node-grid-solar,.pv-expanded .node-offgrid-solar{top:31%}
       .node-house{left:88%;color:var(--load)} .node-additional{left:88%;color:#5ddfc6}
       .diagram.additional-count-0 .node-house{top:49%}
       .diagram.additional-count-1 .node-house{top:56%}.diagram.additional-count-1 .node-additional-1{top:36%}
@@ -807,6 +874,7 @@ class HomePowerFlowCard extends HTMLElement {
       .equipment-body { display:none; padding:0 10px 11px; }.equipment.open .equipment-body{display:block;animation:reveal .25s ease-out}
       .reading-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:5px; }
       .reading { min-width:0; padding:8px; border:1px solid rgba(255,255,255,.055); border-radius:9px; color:inherit; background:rgba(0,0,0,.14); text-align:left; cursor:pointer; }
+      .calculated-reading { cursor:default; }
       .reading span { display:block; overflow:hidden; color:var(--muted); font-size:9px; white-space:nowrap; text-overflow:ellipsis; }.reading b{display:block;margin-top:3px;font-size:11px;white-space:nowrap}.reading.unavailable{opacity:.45}
       .cells-head { display:flex;justify-content:space-between;margin:13px 2px 7px;font-size:10px}.cells-head span{color:var(--muted)}.cells-head .warn{color:#ff8a75}
       .cell-grid { display:grid;grid-template-columns:repeat(4,1fr);gap:4px}.cell{padding:6px 3px;border:1px solid rgba(114,230,162,.12);border-radius:7px;color:inherit;background:rgba(114,230,162,.035);cursor:pointer}.cell span{display:block;color:#6e8298;font-size:8px}.cell b{display:block;margin-top:2px;font-size:9px}.cell.unavailable{opacity:.4}
@@ -830,7 +898,7 @@ class HomePowerFlowCard extends HTMLElement {
         .node-battery-bank{width:100px}.output-electrical{left:60%;top:43%;font-size:9px;transform:translate(0,-50%)}
         .panel-grid,.batteries-grid{grid-template-columns:1fr}
       }
-      @media(max-width:390px){.metric strong{font-size:12px}.diagram{height:580px}.node{width:66px}.node-grid{left:8%;width:60px}.node-power-box{left:22%;width:74px}.node-battery-bank{width:96px}.pv-node{width:52px}.node-grid-pv-1{left:12%}.node-grid-pv-2{left:28%}.node-offgrid-pv-1{left:42%}.node-offgrid-pv-2{left:58%}.node-offgrid-inverter{left:50%;width:88px}.node-house,.node-additional{left:88%}.battery-row{left:12%;right:12%}.pack-node{width:52px}.pack-icon svg{width:16px}.pack-node b{font-size:7px}}
+      @media(max-width:390px){.metric strong{font-size:12px}.diagram{height:580px}.node{width:66px}.node-grid{left:8%;width:60px}.node-power-box{left:22%;width:74px}.node-battery-bank{width:96px}.pv-node{width:52px}.node-offgrid-inverter{left:50%;width:88px}.node-house,.node-additional{left:88%}.battery-row{left:12%;right:12%}.pack-node{width:52px}.pack-icon svg{width:16px}.pack-node b{font-size:7px}}
     `;
   }
 }
